@@ -1,0 +1,8 @@
+{
+	"SourceFiles": [
+		"/Users/harrisonverrios/Documents/Uni/FIT3094 (Artificial Life)/Assignments/UE4_AI_Assignment_3/AI_Evolution/Source/AI_Evolution/AI_Evolution.Build.cs",
+		"/Users/harrisonverrios/Documents/Uni/FIT3094 (Artificial Life)/Assignments/UE4_AI_Assignment_3/AI_Evolution/Source/AI_Evolution.Target.cs",
+		"/Users/harrisonverrios/Documents/Uni/FIT3094 (Artificial Life)/Assignments/UE4_AI_Assignment_3/AI_Evolution/Source/AI_EvolutionEditor.Target.cs"
+	],
+	"EngineVersion": "4.27.2"
+}
