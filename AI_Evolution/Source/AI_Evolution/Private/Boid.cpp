@@ -81,10 +81,11 @@ void ABoid::BeginPlay()
 void ABoid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	//move ship
+	
+	// Move ship
 	FlightPath(DeltaTime);
 	
-	//update ship mesh rotation
+	// Update ship mesh rotation
 	UpdateMeshRotation();
 
 	if(CollisionCloud != nullptr)
@@ -100,36 +101,230 @@ void ABoid::Tick(float DeltaTime)
 
 void ABoid::UpdateMeshRotation()
 {
-	//rotate toward current boid heading smoothly
+	// Rotate toward current boid heading smoothly
 	CurrentRotation = FMath::RInterpTo(CurrentRotation, this->GetActorRotation(), GetWorld()->DeltaTimeSeconds, 7.0f);
 	this->BoidMesh->SetWorldRotation(CurrentRotation);
 }
 
-//-------------------------------------Lab 8 Starts Here-----------------------------------------------------------------------------
-
 void ABoid::FlightPath(float DeltaTime)
 {
-	
+	// Set the initial acceleration
+	FVector Acceleration = FVector::ZeroVector;
+
+	// Update the position and rotation
+	this->SetActorLocation(this->GetActorLocation() + BoidVelocity * DeltaTime);
+	SetActorRotation(BoidVelocity.ToOrientationQuat());
+
+	// Determine any nearby ships
+	TArray<AActor*> NearbyShips;
+	PerceptionSensor->GetOverlappingActors(NearbyShips, TSubclassOf<ABoid>());
+
+	// Add in the three rules of Boids
+	Acceleration += AvoidShips(NearbyShips);
+	Acceleration += VelocityMatching(NearbyShips);
+	Acceleration += FlockCentering(NearbyShips);
+
+	// If there are obstacles
+	if (IsObstacleAhead())
+		Acceleration += AvoidObstacle();
+
+	// Apply Gas Cloud forces
+	for (int i = 0; i < Spawner->GasClouds.Num(); i++)
+	{
+		// Determine the difference between the gas clouds and the location of the boid and add a force
+		// Only within a certain distance
+		FVector Force = Spawner->GasClouds[i]->GetActorLocation() - GetActorLocation();
+		if (Force.Size() < 1500)
+			GasCloudForces.Add(Force);
+	}
+
+	// Loop through all of the gas cloud forces
+	for (FVector GasCloudForce : GasCloudForces)
+	{
+		// Adds the force to the acceleration of the clouds
+		GasCloudForce = GasCloudForce.GetSafeNormal() * GasCloudStrength;
+		Acceleration += GasCloudForce;
+		GasCloudForces.Remove(GasCloudForce);
+	}
+
+	// Update the final velocity
+	BoidVelocity += Acceleration * DeltaTime;
+
+	// Clamp the velocity between some speeds
+	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, MaxSpeed);
 }
 
 FVector ABoid::AvoidShips(TArray<AActor*> NearbyShips)
 {
-	return FVector();
+	// Initialise the local variables for the tracking of nearby ships
+	FVector Steering = FVector::ZeroVector;
+	int ShipCount = 0;
+	FVector SeparationDirection = FVector::ZeroVector;
+	float ProximityFactor = 0.0f;
+
+	// Look through all the ships
+	for (AActor* OverlapActor : NearbyShips)
+	{
+		// Get the boid
+		ABoid* LocalShip = Cast<ABoid>(OverlapActor);
+
+		// Check if the ship exists
+		if (LocalShip != nullptr && LocalShip != this)
+		{
+			// Check if Local Ship is outside the perception FOV
+			if (FVector::DotProduct(this->GetActorForwardVector(),
+				(LocalShip->GetActorLocation() - this->GetActorLocation()).GetSafeNormal()) <= SeparationFOV)
+			{
+				// LocalShip is outside the perception - skip
+				continue;
+			}
+
+			// Get Normalized direction from the nearby ship
+			SeparationDirection = this->GetActorLocation() - LocalShip->GetActorLocation();
+			SeparationDirection = SeparationDirection.GetSafeNormal() * 2.0;
+
+			// Get the scaling factor based on the other ship's proximity. 0 is far, 1 is close
+			ProximityFactor = 1.0f - SeparationDirection.Size() / this->PerceptionSensor->GetScaledSphereRadius();
+
+			// Add Steering force of the ship and increase the flock amount
+			Steering += ProximityFactor * SeparationDirection;
+			ShipCount++;
+		}
+	}
+
+	// If the number of ships is greater than zero
+	if (ShipCount > 0)
+	{
+		// Get the flock average separation force and apply a steering strength
+		Steering /= ShipCount;
+		Steering.GetSafeNormal() -= this->BoidVelocity.GetSafeNormal();
+		Steering *= SeparationStrength;
+		return Steering;
+	}
+
+	// Return an empty vector otherwise
+	return FVector::ZeroVector;
 }
+
 
 FVector ABoid::VelocityMatching(TArray<AActor*> NearbyShips)
 {
-	return FVector();
+	// Initialise the variables
+	FVector Steering = FVector::ZeroVector;
+	int ShipCount = 0;
+
+	// Loop through each of the nearby ships
+	for (AActor* OverlapActor : NearbyShips)
+	{
+		// Get the boid
+		ABoid* LocalShip = Cast<ABoid>(OverlapActor);
+
+		// Check if the ship exists
+		if (LocalShip != nullptr && LocalShip != this)
+		{
+			// Check if Local Ship is outside the perception FOV
+			if (FVector::DotProduct(this->GetActorForwardVector(),
+				(LocalShip->GetActorLocation() - this->GetActorLocation()).GetSafeNormal()) <= SeparationFOV)
+			{
+				// LocalShip is outside the perception - skip
+				continue;
+			}
+
+			// Add the LocalShip's alignment force
+			Steering += LocalShip->BoidVelocity.GetSafeNormal();
+			ShipCount++;
+		}
+	}
+
+	// If the number of ships exist
+	if (ShipCount > 0)
+	{
+		// Get the steering force as the average of the flocking direction
+		Steering /= ShipCount;
+		Steering.GetSafeNormal() -= this->BoidVelocity.GetSafeNormal();
+		Steering *= VelocityStrength;
+		return Steering;
+	}
+
+	// Otherwise return an empty vector
+	return FVector::ZeroVector;
 }
 
 FVector ABoid::FlockCentering(TArray<AActor*> NearbyShips)
 {
-	return FVector();
+	// Initialise the variables
+	FVector Steering = FVector::ZeroVector;
+	int ShipCount = 0;
+	FVector AveragePosition = FVector::ZeroVector;
+
+	// Loop through each of the nearby ships
+	for (AActor* OverlapActor : NearbyShips)
+	{
+		// Get the boid
+		ABoid* LocalShip = Cast<ABoid>(OverlapActor);
+
+		// Check if the ship exists
+		if (LocalShip != nullptr && LocalShip != this)
+		{
+			// Check if Local Ship is outside the perception FOV
+			if (FVector::DotProduct(this->GetActorForwardVector(),
+				(LocalShip->GetActorLocation() - this->GetActorLocation()).GetSafeNormal()) <= SeparationFOV)
+			{
+				// LocalShip is outside the perception - skip
+				continue;
+			}
+
+			// Get the Cohesive force to group with LocalShip
+			AveragePosition += LocalShip->GetActorLocation();
+			ShipCount++;
+		}
+	}
+
+	// If the number of ships exist
+	if (ShipCount > 0)
+	{
+		// Average Cohesion force of ships
+		AveragePosition /= ShipCount;
+		Steering = AveragePosition - this->GetActorLocation();
+		Steering.GetSafeNormal() -= this->BoidVelocity.GetSafeNormal();
+		Steering *= CenteringStrength;
+		return Steering;
+	}
+
+	// Otherwise return an empty vector
+	return FVector::ZeroVector;
 }
 
 FVector ABoid::AvoidObstacle()
 {
-	return FVector();
+	FVector Steering = FVector::ZeroVector;
+	FQuat SensorRotation = FQuat::FindBetweenVectors(AvoidanceSensors[0], this->GetActorForwardVector());
+	FVector NewSensedDirection = FVector::ZeroVector;
+	FCollisionQueryParams TraceParameters;
+	FHitResult Hit;
+
+	// Look through the sensors
+	for (FVector AvoidanceSensor : AvoidanceSensors)
+	{
+		// Check the trace
+		NewSensedDirection = SensorRotation.RotateVector(AvoidanceSensor);
+		GetWorld()->LineTraceSingleByChannel(Hit,
+			this->GetActorLocation(),
+			this->GetActorLocation() * NewSensedDirection * SensorRadius,
+			ECC_GameTraceChannel1,
+			TraceParameters);
+
+		// If there is a hit
+		if (!Hit.bBlockingHit)
+		{
+			Steering = NewSensedDirection.GetSafeNormal() - this->BoidVelocity.GetSafeNormal();
+			Steering *= AvoidanceStrength;
+			return Steering;
+		}
+	}
+
+	// Return an empty vector otherwise
+	return FVector::ZeroVector;
 }
 
 
@@ -146,6 +341,7 @@ bool ABoid::IsObstacleAhead()
 		NewSensorDirection = SensorRotation.RotateVector(AvoidanceSensors[0]);
 		FCollisionQueryParams TraceParameters;
 		FHitResult Hit;
+		
 		//line trace
 		GetWorld()->LineTraceSingleByChannel(Hit,
 			this->GetActorLocation(),
