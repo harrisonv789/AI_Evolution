@@ -74,3 +74,4 @@ SourceArt/**/*.tga
 DerivedDataCache/*
 .DS_Store
 
+**/.idea/**
