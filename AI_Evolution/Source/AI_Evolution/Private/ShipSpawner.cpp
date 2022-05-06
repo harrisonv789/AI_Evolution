@@ -1,5 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+/**
+ * FIT3094 ASSIGNMENT 2 - GOAL PLANNING
+ * Author: Harrison Verrios
+ */
 
 #include "ShipSpawner.h"
 
@@ -34,9 +36,9 @@ void AShipSpawner::BeginPlay()
 void AShipSpawner::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if(NumofShips < MaxShipCount *.2)
+	if(NumOfShips < MaxShipCount *.2)
 	{
-		while(NumofShips < MaxShipCount)
+		while(NumOfShips < MaxShipCount)
 		{
 			SpawnShip();
 		}
@@ -52,7 +54,7 @@ void AShipSpawner::SpawnShip()
 	ABoid* SpawnedShip = Cast<ABoid>(GetWorld()->SpawnActor(HarvestShip, &loc ,&FRotator::ZeroRotator));
 	SpawnedShip->Spawner = this;
 	SetShipVariables(SpawnedShip);
-	NumofShips++;
+	NumOfShips++;
 }
 
 void AShipSpawner::SetShipVariables(ABoid* Ship)

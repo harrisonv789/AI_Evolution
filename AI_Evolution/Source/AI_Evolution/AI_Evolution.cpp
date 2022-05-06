@@ -1,4 +1,7 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+/**
+ * FIT3094 ASSIGNMENT 2 - GOAL PLANNING
+ * Author: Harrison Verrios
+ */
 
 #include "AI_Evolution.h"
 #include "Modules/ModuleManager.h"

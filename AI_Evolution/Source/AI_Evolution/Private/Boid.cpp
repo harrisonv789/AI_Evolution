@@ -1,4 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+/**
+ * FIT3094 ASSIGNMENT 2 - GOAL PLANNING
+ * Author: Harrison Verrios
+ */
 
 #include "Boid.h"
 #include "Components/SphereComponent.h"
@@ -310,7 +313,7 @@ FVector ABoid::AvoidObstacle()
 		NewSensedDirection = SensorRotation.RotateVector(AvoidanceSensor);
 		GetWorld()->LineTraceSingleByChannel(Hit,
 			this->GetActorLocation(),
-			this->GetActorLocation() * NewSensedDirection * SensorRadius,
+			this->GetActorLocation() + NewSensedDirection * SensorRadius,
 			ECC_GameTraceChannel1,
 			TraceParameters);
 
@@ -326,10 +329,6 @@ FVector ABoid::AvoidObstacle()
 	// Return an empty vector otherwise
 	return FVector::ZeroVector;
 }
-
-
-
-//------------------------------------------Collision Code---------------------------------------------------------------------------
 
 
 bool ABoid::IsObstacleAhead()
@@ -383,7 +382,7 @@ void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 		if (ship != nullptr && OtherComponent->GetName().Equals(TEXT("Boid Collision Component")))
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("Collector Ship Collided With Ship"));
-			Spawner->NumofShips--;
+			Spawner->NumOfShips--;
 			Destroy();
 			return;
 		}
@@ -392,7 +391,7 @@ void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 		if(wall != nullptr && OverlappedComponent->GetName().Equals(TEXT("Boid Collision Component")))
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("Collector Ship Collided With Wall"));
-			Spawner->NumofShips--;
+			Spawner->NumOfShips--;
 			Destroy();
 		}
 	}
