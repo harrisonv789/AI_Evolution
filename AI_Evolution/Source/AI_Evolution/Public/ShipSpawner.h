@@ -41,11 +41,34 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	TSubclassOf<AGasCloud> GasCloud;
 
 	// The current number of ships spawned
+	UPROPERTY(BlueprintReadOnly)
 	int NumOfShips = 0;
+
+	// The number of generations
+	UPROPERTY(BlueprintReadOnly)
+	int NumGenerations = 0;
+
+	// The current highest fitness
+	UPROPERTY(BlueprintReadOnly)
+	int HighestFitness = 0;
 
 	// The current list of gas clouds spawned in the world
 	UPROPERTY()
 	TArray<AGasCloud*> GasClouds;
+
+	// The current Population of DNA
+	TArray<DNA> Population;
+	
+	// The list of DNA from dead ships
+	TArray<DNA> DeadDNA;
+
+	// The number of parents
+	static constexpr int NUM_PARENTS_PAIR = 50;
+
+	// The chance for mutation
+	static constexpr float MUTATION_CHANCE = 0.10;
+
+	
 
 
 	/*************************************************************/
@@ -55,6 +78,23 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	 * @brief Called when the game's execution first begins
 	 */
 	virtual void BeginPlay() override;
+
+	/**
+	 * @brief Spawns a single ship into the world
+	 */
+	void SpawnShip();
+
+	/**
+	 * @brief Generates a new population of Ships
+	 * @param NewChildren The new children to generate if they exist
+	 */
+	void GeneratePopulation(TArray<DNA> NewChildren = TArray<DNA>());
+
+	/**
+	 * @brief Returns the child generation
+	 * @return The child generation created
+	 */
+	TArray<DNA> ChildGeneration ();
 	
 	
 	/*************************************************************/
@@ -70,11 +110,6 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	 * @param DeltaTime The time-step in seconds
 	 */
 	virtual void Tick(float DeltaTime) override;
-
-	/**
-	 * @brief Spawns a single ship into the world
-	 */
-	void SpawnShip();
 
 	/**
 	 * @brief Updates the ship variables in the world

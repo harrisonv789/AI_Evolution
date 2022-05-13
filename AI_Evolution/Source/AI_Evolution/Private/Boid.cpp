@@ -8,7 +8,6 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "DrawDebugHelpers.h"
 #include "ShipSpawner.h"
-#include "Engine/StaticMeshActor.h"
 
 // Sets default values
 ABoid::ABoid()
@@ -108,6 +107,27 @@ void ABoid::Tick(float DeltaTime)
 }
 
 
+void ABoid::SetDNA(DNA NewDNA)
+{
+	// Sets the DNA
+	ShipDNA = NewDNA;
+
+	// Update the strengths
+	VelocityStrength = ShipDNA.StrengthValues[0];
+	SeparationStrength = ShipDNA.StrengthValues[1];
+	CenteringStrength = ShipDNA.StrengthValues[2];
+	AvoidanceStrength = ShipDNA.StrengthValues[3];
+	GasCloudStrength = ShipDNA.StrengthValues[4];
+	SpeedStrength = ShipDNA.StrengthValues[5];
+}
+
+
+DNA ABoid::GetDNA()
+{
+	return ShipDNA;
+}
+
+
 void ABoid::UpdateMeshRotation()
 {
 	// Rotate toward current boid heading smoothly
@@ -161,7 +181,7 @@ void ABoid::FlightPath(float DeltaTime)
 	BoidVelocity += Acceleration * DeltaTime;
 
 	// Clamp the velocity between some speeds
-	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, MaxSpeed);
+	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, MaxSpeed + (SpeedStrength / 10000) * 300);
 }
 
 
@@ -304,6 +324,7 @@ FVector ABoid::FlockCentering(TArray<AActor*> NearbyShips)
 	return FVector::ZeroVector;
 }
 
+
 FVector ABoid::AvoidObstacle()
 {
 	FVector Steering = FVector::ZeroVector;
@@ -369,42 +390,80 @@ bool ABoid::IsObstacleAhead()
 				}
 			}
 		}
+		
 		return Hit.bBlockingHit;
 	}
+	
 	return false;
 }
 
 
-void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ABoid::CalculateAndStoreFitness(EDeathReason Reason)
 {
-	if(OtherActor && OtherActor != this && Invincibility <= 0)
+	// If the fitness is empty
+	if (ShipDNA.StoredFitness < 0)
 	{
-		AGasCloud* cloud = Cast<AGasCloud>(OtherActor);
-		if (cloud != nullptr && OtherComponent->GetName().Equals(TEXT("Boid Collision Component")))
+		// First time calculating fitness
+		// Add fitness calculation here
+
+		// TODO: Replace this with a real calculation
+		ShipDNA.StoredFitness = 0;
+	}
+}
+
+
+void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                 UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if(OtherActor && OtherActor != this)
+	{
+
+		// If currently not invincible and hitting a BOID collision
+		if (Invincibility <= 0 && OtherComponent->GetName().Equals(TEXT("Boid Collision Component")))
 		{
-			CollisionCloud = cloud;
-			return;
+			// Get the cloud
+			AGasCloud* Cloud = Cast<AGasCloud>(OtherActor);
+			if (Cloud != nullptr)
+			{
+				CollisionCloud = Cloud;
+				return;
+			}
+
+			// Check for a ship
+			ABoid* Ship = Cast<ABoid>(OtherActor);
+			if (Ship != nullptr)
+			{
+				// Subtract the number of ships
+				Spawner->NumOfShips--;
+
+				// Recalculates the fitness
+				CalculateAndStoreFitness(SHIP_COLLISION);
+				
+				// Add the current ships' DNA to the dead DNA 
+				Spawner->DeadDNA.Add(ShipDNA);
+
+				// Destroy this ship
+				Destroy();
+				return;
+			}
 		}
-		
-		ABoid* ship = Cast<ABoid>(OtherActor);
-		if (ship != nullptr && OtherComponent->GetName().Equals(TEXT("Boid Collision Component")))
+
+		// If the other actor is a cube (like a wall that it collides with)
+		if (OtherActor->GetName().Contains("Cube") &&
+			OverlappedComponent->GetName().Equals(TEXT("Boid Collision Component")))
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("Collector Ship Collided With Ship"));
 			Spawner->NumOfShips--;
-			Destroy();
-			return;
-		}
-		
-		AStaticMeshActor* wall = Cast<AStaticMeshActor>(OtherActor);
-		if(wall != nullptr && OverlappedComponent->GetName().Equals(TEXT("Boid Collision Component")))
-		{
-			//UE_LOG(LogTemp, Warning, TEXT("Collector Ship Collided With Wall"));
-			Spawner->NumOfShips--;
+
+			// Recalculates the fitness
+			CalculateAndStoreFitness(WALL_COLLISION);
+			
+			// Add the current ships' DNA to the dead DNA 
+			Spawner->DeadDNA.Add(ShipDNA);
+
+			// Destroy this ship
 			Destroy();
 		}
 	}
-	
 }
 
 

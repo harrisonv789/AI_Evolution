@@ -6,6 +6,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "DeathReason.h"
+#include "DNA.h"
 #include "GasCloud.h"
 #include "GameFramework/Actor.h"
 #include "Boid.generated.h"
@@ -34,6 +36,9 @@ class AI_EVOLUTION_API ABoid : public AActor
 
 	// The maximum speed in units / s
 	float MaxSpeed = 600.0f;
+
+	// The current DNA of the ship
+	DNA ShipDNA;
 
 	
 
@@ -110,6 +115,9 @@ class AI_EVOLUTION_API ABoid : public AActor
 
 	// The strength to apply when traversing gas clouds
 	float GasCloudStrength = 1.0f;
+
+	// The additional speed strength to add to maximum
+	float SpeedStrength = 5000.0f;
 	
 
 	/*************************************************************/
@@ -164,6 +172,12 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 */
 	bool IsObstacleAhead();
 
+	/**
+	 * @brief Calculates a new fitness value and stores the fitness in the DNA
+	 * @param Reason The cause of the death
+	 */
+	void CalculateAndStoreFitness (EDeathReason Reason);
+
 	
 
 	/*************************************************************/
@@ -179,6 +193,18 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * @param DeltaTime The time-step in seconds
 	 */
 	virtual void Tick(float DeltaTime) override;
+
+	/**
+	 * @brief Sets the current DNA properties
+	 * @param NewDNA The new DNA to update to
+	 */
+	void SetDNA (DNA NewDNA);
+
+	/**
+	 * @brief Returns the Ship's current DNA
+	 * @return The DNA of the Ship
+	 */
+	DNA GetDNA ();
 	
 	/**
 	 * @brief Called when the hit-box is overlapped
