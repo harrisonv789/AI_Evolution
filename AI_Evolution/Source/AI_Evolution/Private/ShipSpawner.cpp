@@ -1,5 +1,5 @@
 /**
- * FIT3094 ASSIGNMENT 2 - GOAL PLANNING
+ * FIT3094 ASSIGNMENT 3 - EVOLUTION
  * Author: Harrison Verrios
  */
 
@@ -13,31 +13,41 @@ AShipSpawner::AShipSpawner()
 
 }
 
+
 // Called when the game starts or when spawned
 void AShipSpawner::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Spawn the initial ships
 	for(int i = 0; i < MaxShipCount; i++)
 	{
 		SpawnShip();
 	}
 
-	for(int i = 0; i < 5; i++)
+	// Spawn the gas cloud count
+	for(int i = 0; i < MaxGasCloudCount; i++)
 	{
-		float xloc = FMath::RandRange(-2500.0f, 2500.0f);
-		float yloc = FMath::RandRange(-2500.0f, 2500.0f);
-		float zloc = FMath::RandRange(0.0f, 5000.0f);
-		FVector loc(xloc, yloc, zloc);
-		GasClouds.Add(Cast<AGasCloud>(GetWorld()->SpawnActor(GasCloud, &loc ,&FRotator::ZeroRotator)));
+		const float XLoc = FMath::RandRange(-2500.0f, 2500.0f);
+		const float YLoc = FMath::RandRange(-2500.0f, 2500.0f);
+		const float ZLoc = FMath::RandRange(0.0f, 5000.0f);
+		const FVector Location(XLoc, YLoc, ZLoc);
+
+		// Add the gas cloud to the world
+		GasClouds.Add(Cast<AGasCloud>(GetWorld()->SpawnActor(GasCloud, &Location, &FRotator::ZeroRotator)));
 	}
 }
+
 
 // Called every frame
 void AShipSpawner::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if(NumOfShips < MaxShipCount *.2)
+
+	// If the number of ships is less than 20% of the maximum
+	if (NumOfShips < MaxShipCount * 0.2)
 	{
+		// Spawn more ships
 		while(NumOfShips < MaxShipCount)
 		{
 			SpawnShip();
@@ -45,17 +55,24 @@ void AShipSpawner::Tick(float DeltaTime)
 	}
 }
 
+
 void AShipSpawner::SpawnShip()
 {
-	float xloc = FMath::RandRange(-2000.0f, 2000.0f);
-	float yloc = FMath::RandRange(-2000.0f, 2000.0f);
-	float zloc = FMath::RandRange(500.0f, 4500.0f);
-	FVector loc(xloc, yloc, zloc);
-	ABoid* SpawnedShip = Cast<ABoid>(GetWorld()->SpawnActor(HarvestShip, &loc ,&FRotator::ZeroRotator));
+	// Randomise the location
+	const float XLoc = FMath::RandRange(-2000.0f, 2000.0f);
+	const float YLoc = FMath::RandRange(-2000.0f, 2000.0f);
+	const float ZLoc = FMath::RandRange(500.0f, 4500.0f);
+	const FVector Location(XLoc, YLoc, ZLoc);
+
+	// Spawn the ship
+	ABoid* SpawnedShip = Cast<ABoid>(GetWorld()->SpawnActor(HarvestShip, &Location ,&FRotator::ZeroRotator));
 	SpawnedShip->Spawner = this;
+
+	// Update the variables
 	SetShipVariables(SpawnedShip);
 	NumOfShips++;
 }
+
 
 void AShipSpawner::SetShipVariables(ABoid* Ship)
 {

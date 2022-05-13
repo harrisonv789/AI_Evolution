@@ -1,5 +1,5 @@
 /**
- * FIT3094 ASSIGNMENT 2 - GOAL PLANNING
+ * FIT3094 ASSIGNMENT 3 - EVOLUTION
  * Author: Harrison Verrios
  */
 
@@ -16,13 +16,13 @@ ABoid::ABoid()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	//setup boid mesh component & attach to root
+	// Setup boid mesh component & attach to root
 	BoidMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Boid Mesh Component"));
 	RootComponent = BoidMesh;
 	BoidMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BoidMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
 	
-	//setup boid collision component and set as root
+	// Setup boid collision component and set as root
 	BoidCollision = CreateDefaultSubobject<USphereComponent>(TEXT("Boid Collision Component"));
 	BoidCollision->SetupAttachment(RootComponent);
 	BoidCollision->SetCollisionObjectType(ECC_Pawn);
@@ -30,7 +30,7 @@ ABoid::ABoid()
 	BoidCollision->SetCollisionResponseToAllChannels(ECR_Overlap);
 	BoidCollision->SetSphereRadius(30.0f);
 	
-	//setup cohesion sensor component
+	// Setup cohesion sensor component
 	PerceptionSensor = CreateDefaultSubobject<USphereComponent>(TEXT("Perception Sensor Component"));
 	PerceptionSensor->SetupAttachment(RootComponent);
 	PerceptionSensor->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -38,69 +38,75 @@ ABoid::ABoid()
 	PerceptionSensor->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	PerceptionSensor->SetSphereRadius(300.0f);
 
-	//set default velocity
+	// Set default velocity
 	BoidVelocity = FVector::ZeroVector;
 
-	//empty sensor array
+	// Empty sensor array
 	AvoidanceSensors.Empty();
 
-	//theta angle of rotation on xy plane around z axis (yaw) around sphere
+	// Theta angle of rotation on xy plane around z axis (yaw) around sphere
 
-	//direction vector pointing from the center to point on sphere surface
+	// Direction vector pointing from the center to point on sphere surface
 	FVector SensorDirection;
 
 	for (int32 i = 0; i < NumSensors; ++i)
 	{
-		//calculate the spherical coordinates of the direction vectors endpoint
-		float yaw = 2 * UKismetMathLibrary::GetPI() * GoldenRatio * i;
-		float pitch = FMath::Acos(1 - (2 * float(i) / NumSensors));
+		// Calculate the spherical coordinates of the direction vectors endpoint
+		const float Yaw = 2 * UKismetMathLibrary::GetPI() * GOLDEN_RATIO * i;
+		const float Pitch = FMath::Acos(1 - 2 * static_cast<float>(i) / NumSensors);
 
-		//convert point on sphere to cartesian coordinates xyz
-		SensorDirection.X = FMath::Cos(yaw)*FMath::Sin(pitch);
-		SensorDirection.Y = FMath::Sin(yaw)*FMath::Sin(pitch);
-		SensorDirection.Z = FMath::Cos(pitch);
-		//add direction to list of sensors for avoidance
+		// Convert point on sphere to cartesian coordinates xyz
+		SensorDirection.X = FMath::Cos(Yaw)*FMath::Sin(Pitch);
+		SensorDirection.Y = FMath::Sin(Yaw)*FMath::Sin(Pitch);
+		SensorDirection.Z = FMath::Cos(Pitch);
+		
+		// Add direction to list of sensors for avoidance
 		AvoidanceSensors.Emplace(SensorDirection);
 	}
 }
+
 
 // Called when the game starts or when spawned
 void ABoid::BeginPlay()
 {
 	Super::BeginPlay();
-	//set velocity based on spawn rotation and flock speed settings
+	
+	// Set velocity based on spawn rotation and flock speed settings
 	BoidVelocity = this->GetActorForwardVector();
 	BoidVelocity.Normalize();
 	BoidVelocity *= FMath::FRandRange(MinSpeed, MaxSpeed);
 
+	// Add in the events for the overlap components
 	BoidCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoid::OnHitboxOverlapBegin);
 	BoidCollision->OnComponentEndOverlap.AddDynamic(this, &ABoid::OnHitboxOverlapEnd);
 	
-	//set current mesh rotation
+	// Set current mesh rotation
 	CurrentRotation = this->GetActorRotation();
 }
+
 
 // Called every frame
 void ABoid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	// Move ship
+	// Move ship with the flight path
 	FlightPath(DeltaTime);
 	
 	// Update ship mesh rotation
 	UpdateMeshRotation();
 
-	if(CollisionCloud != nullptr)
+	// If the current cloud is collided
+	if (CollisionCloud != nullptr)
 	{
 		GoldCollected += CollisionCloud->RemoveGold();
 	}
 
-	if(Invincibility > 0)
-	{
+	// If invincibility still exists
+	if (Invincibility > 0)
 		Invincibility -= DeltaTime;
-	}
 }
+
 
 void ABoid::UpdateMeshRotation()
 {
@@ -108,6 +114,7 @@ void ABoid::UpdateMeshRotation()
 	CurrentRotation = FMath::RInterpTo(CurrentRotation, this->GetActorRotation(), GetWorld()->DeltaTimeSeconds, 7.0f);
 	this->BoidMesh->SetWorldRotation(CurrentRotation);
 }
+
 
 void ABoid::FlightPath(float DeltaTime)
 {
@@ -157,13 +164,13 @@ void ABoid::FlightPath(float DeltaTime)
 	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, MaxSpeed);
 }
 
+
 FVector ABoid::AvoidShips(TArray<AActor*> NearbyShips)
 {
 	// Initialise the local variables for the tracking of nearby ships
 	FVector Steering = FVector::ZeroVector;
 	int ShipCount = 0;
 	FVector SeparationDirection = FVector::ZeroVector;
-	float ProximityFactor = 0.0f;
 
 	// Look through all the ships
 	for (AActor* OverlapActor : NearbyShips)
@@ -187,7 +194,7 @@ FVector ABoid::AvoidShips(TArray<AActor*> NearbyShips)
 			SeparationDirection = SeparationDirection.GetSafeNormal() * 2.0;
 
 			// Get the scaling factor based on the other ship's proximity. 0 is far, 1 is close
-			ProximityFactor = 1.0f - SeparationDirection.Size() / this->PerceptionSensor->GetScaledSphereRadius();
+			const float ProximityFactor = 1.0f - SeparationDirection.Size() / this->PerceptionSensor->GetScaledSphereRadius();
 
 			// Add Steering force of the ship and increase the flock amount
 			Steering += ProximityFactor * SeparationDirection;
@@ -253,10 +260,9 @@ FVector ABoid::VelocityMatching(TArray<AActor*> NearbyShips)
 	return FVector::ZeroVector;
 }
 
+
 FVector ABoid::FlockCentering(TArray<AActor*> NearbyShips)
 {
-	// Initialise the variables
-	FVector Steering = FVector::ZeroVector;
 	int ShipCount = 0;
 	FVector AveragePosition = FVector::ZeroVector;
 
@@ -288,7 +294,7 @@ FVector ABoid::FlockCentering(TArray<AActor*> NearbyShips)
 	{
 		// Average Cohesion force of ships
 		AveragePosition /= ShipCount;
-		Steering = AveragePosition - this->GetActorLocation();
+		FVector Steering = AveragePosition - this->GetActorLocation();
 		Steering.GetSafeNormal() -= this->BoidVelocity.GetSafeNormal();
 		Steering *= CenteringStrength;
 		return Steering;
@@ -303,12 +309,14 @@ FVector ABoid::AvoidObstacle()
 	FVector Steering = FVector::ZeroVector;
 	FQuat SensorRotation = FQuat::FindBetweenVectors(AvoidanceSensors[0], this->GetActorForwardVector());
 	FVector NewSensedDirection = FVector::ZeroVector;
-	FCollisionQueryParams TraceParameters;
 	FHitResult Hit;
 
 	// Look through the sensors
 	for (FVector AvoidanceSensor : AvoidanceSensors)
 	{
+		// The hit parameters
+		FCollisionQueryParams TraceParameters;
+		
 		// Check the trace
 		NewSensedDirection = SensorRotation.RotateVector(AvoidanceSensor);
 		GetWorld()->LineTraceSingleByChannel(Hit,
@@ -366,6 +374,7 @@ bool ABoid::IsObstacleAhead()
 	return false;
 }
 
+
 void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -397,6 +406,7 @@ void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 	}
 	
 }
+
 
 void ABoid::OnHitboxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex)

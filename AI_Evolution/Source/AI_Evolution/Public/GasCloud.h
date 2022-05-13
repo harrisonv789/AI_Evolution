@@ -1,5 +1,5 @@
 /**
- * FIT3094 ASSIGNMENT 2 - GOAL PLANNING
+ * FIT3094 ASSIGNMENT 3 - EVOLUTION
  * Author: Harrison Verrios
  */
 
@@ -11,33 +11,59 @@
 #include "GameFramework/Actor.h"
 #include "GasCloud.generated.h"
 
+
+/**
+ * @brief The class that handles the cloud of gas that stores some gold
+ * within the cloud.
+ */
 UCLASS()
 class AI_EVOLUTION_API AGasCloud : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	AGasCloud();
 
+	/*************************************************************/
+	public:	
+
+	// The current cloud particle system that is shown
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	class UNiagaraSystem* GasCloudParticle;
-	
+	UNiagaraSystem* GasCloudParticle;
+
+	// The current storage of the gold
 	float GoldStorage = 1000;
 
-	UPROPERTY(EditAnywhere) USphereComponent* CloudHitBox;
+	// The hit-box of the cloud
+	UPROPERTY(EditAnywhere)
+	USphereComponent* CloudHitBox;
 
-	//UPROPERTY(EditAnywhere) 
 	
-	UFUNCTION(BlueprintCallable) float RemoveGold();
+	/*************************************************************/
+	protected:
 	
-protected:
-	// Called when the game starts or when spawned
+	/**
+	 * @brief Called when the actor first starts playing
+	 */
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	
+	/*************************************************************/
+	public:
+	
+	/**
+	 * @brief Default constructor initialises the default values
+	 */
+	AGasCloud();
 
+	/**
+	 * @brief Called every time the game updates
+	 * @param DeltaTime The time-step in seconds
+	 */
+	virtual void Tick(float DeltaTime) override;
+	
+	/**
+	 * @brief Removes gold from the cloud and returns the current gold value
+	 * @return The value of the gold
+	 */
+	UFUNCTION(BlueprintCallable)
+	float RemoveGold();
 	
 };
