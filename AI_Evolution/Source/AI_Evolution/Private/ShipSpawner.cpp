@@ -173,7 +173,9 @@ TArray<DNA> AShipSpawner::ChildGeneration()
 		// Store the current highest fitness
 		// TODO: Might not be best here
 		if (TempHighestFitness > HighestFitness)
+		{
 			HighestFitness = TempHighestFitness;
+		}
 	}
 
 	// Create children array and set up to be added to population

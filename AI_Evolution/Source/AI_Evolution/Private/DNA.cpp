@@ -7,26 +7,30 @@
 
 DNA::DNA()
 {
-	// Nothing
+	// This is only called when the data object is created.
+	// This should not be called by the appropriate Ship Spawner manager.
 }
-
 
 DNA::DNA(int DNASize)
 {
+	// Update the size of the fixed-length genome (this will not change for this simulation)
 	NumOfStrengthValues = DNASize;
 
-	// Loop through all the Strength values
-	for (int i = 0; i < NumOfStrengthValues; i++)
-	{
-		// Random strength
-		StrengthValues.Add(FMath::RandRange(0.0f, 10000.0f));
-	}
+	// Initialises the DNA with some fixed one so they are all identical
+	StrengthValues = {
+		100.0f,				// Velocity Strength
+		100.0f,				// Separation Strength
+		1.0f,				// Centering Strength
+		10000.0f,			// Avoidance Strength
+		1.0f,				// Gas Cloud Strength
+		5000.0f 			// Speed Strength
+	};
 }
 
 
 DNA::~DNA()
 {
- 
+	// Currently no need for a destructor
 }
 
 
@@ -60,16 +64,30 @@ DNA DNA::Crossover (DNA Other)
 }
 
 
+// TODO: Explain how the mutation works
 void DNA::Mutation()
 {
-	// Array from 0 - 100,000
+	// Loop through every one of the strength values for mutations
 	for (int i = 0; i < NumOfStrengthValues; ++i)
 	{
 		// If mutating this gene
 		if (FMath::RandRange(0.0f, 1.0f) < MUTATION_CHANCE)
 		{
-			// TODO: Need to improve this (maybe not new random, just adjust)
-			StrengthValues[i] = FMath::RandRange(0, 100000);
+			// The mutation adjustment %
+			constexpr float MUTATION_ADJUSTMENT = 0.05f;
+			
+			// Either decrease or increase by somewhere between 5 and -5% of the value
+			const float Delta = StrengthValues[i] * MUTATION_ADJUSTMENT;
+
+			// Calculate the min and max for the random
+			const float MinStrength = StrengthValues[i] - Delta;
+			const float MaxStrength = StrengthValues[i] + Delta;
+			
+			// Adjust the value
+			StrengthValues[i] = FMath::RandRange(MinStrength, MaxStrength);
+
+			// Clamp the value
+			StrengthValues[i] = FMath::Clamp(StrengthValues[i], MIN_STRENGTH_VALUE, MAX_STRENGTH_VALUE);
 		}
 	}
 }
@@ -85,4 +103,7 @@ void DNA::operator=(const DNA& Other)
 
 	// The current fitness stored
 	StoredFitness = Other.StoredFitness;
+
+	// Reset the elite
+	IsElite = false;
 }

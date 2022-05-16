@@ -15,20 +15,28 @@ class AI_EVOLUTION_API DNA
 	public:
 
 	// The chance of mutation
-	static constexpr float MUTATION_CHANCE = 0.05f;
+	static constexpr float MUTATION_CHANCE = 0.10f;
+
+	// The minimum value for a strength
+	static constexpr float MIN_STRENGTH_VALUE = 0.0f;
+
+	// The maximum value for a strength
+	static constexpr float MAX_STRENGTH_VALUE = 20000.0;
 
 	// The number of strength values
-	int NumOfStrengthValues;
+	int NumOfStrengthValues = 0;
 
 	// The list of strength values
 	TArray<float> StrengthValues;
 
 	// The current fitness stored
 	int StoredFitness = -1;
+
+	// If this DNA is optimal
+	bool IsElite = false;
 	
 
 	/*************************************************************/
-	public:
 	
 	/**
 	 * @brief Base constructor with no parameters

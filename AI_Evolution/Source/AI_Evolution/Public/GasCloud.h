@@ -11,7 +11,6 @@
 #include "GameFramework/Actor.h"
 #include "GasCloud.generated.h"
 
-
 /**
  * @brief The class that handles the cloud of gas that stores some gold
  * within the cloud.

@@ -57,6 +57,14 @@ class AI_EVOLUTION_API ABoid : public AActor
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent* PerceptionSensor;
 
+	// The factor to apply for the time alive on the fitness function
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	float FitnessTimeWeighting = 1.0;
+
+	// The factor to apply for the gold on the fitness function
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	float FitnessGoldWeighting = 1.0;
+
 	// The ships velocity
 	FVector BoidVelocity;
 
@@ -68,8 +76,16 @@ class AI_EVOLUTION_API ABoid : public AActor
 	float AlignmentFOV = 0.5f;
 	float CohesionFOV = -0.5f;
 
+	// The maximum time being invincible
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	float MaxInvincibility = 1.0;
+
 	// The current time being invincible
-	float Invincibility = 5.0f;
+	float Invincibility = 0.0;
+
+	// The current time alive
+	UPROPERTY(BlueprintReadOnly)
+	float CurrentAliveTime = 0.0;
 	
 	// Avoidance Sensors
 	TArray<FVector> AvoidanceSensors;

@@ -40,6 +40,9 @@ ABoid::ABoid()
 	// Set default velocity
 	BoidVelocity = FVector::ZeroVector;
 
+	// Set the invincibility time
+	Invincibility = MaxInvincibility;
+
 	// Empty sensor array
 	AvoidanceSensors.Empty();
 
@@ -104,15 +107,18 @@ void ABoid::Tick(float DeltaTime)
 	// If invincibility still exists
 	if (Invincibility > 0)
 		Invincibility -= DeltaTime;
+
+	// Increase the time alive
+	CurrentAliveTime += DeltaTime;
 }
 
 
 void ABoid::SetDNA(DNA NewDNA)
 {
-	// Sets the DNA
+	// Sets the DNA to the new DNA
 	ShipDNA = NewDNA;
 
-	// Update the strengths
+	// Update the strengths from the DNA
 	VelocityStrength = ShipDNA.StrengthValues[0];
 	SeparationStrength = ShipDNA.StrengthValues[1];
 	CenteringStrength = ShipDNA.StrengthValues[2];
@@ -370,14 +376,14 @@ bool ABoid::IsObstacleAhead()
 		FCollisionQueryParams TraceParameters;
 		FHitResult Hit;
 		
-		//line trace
+		// Line trace
 		GetWorld()->LineTraceSingleByChannel(Hit,
 			this->GetActorLocation(),
 			this->GetActorLocation() + NewSensorDirection * SensorRadius,
 			ECC_GameTraceChannel1,
 			TraceParameters);
 
-		//check if boid is inside object (i.e. no need to avoid/impossible to)
+		// Check if boid is inside object (i.e. no need to avoid/impossible to)
 		if (Hit.bBlockingHit)
 		{
 			TArray<AActor*> OverlapActors;
@@ -398,22 +404,26 @@ bool ABoid::IsObstacleAhead()
 }
 
 
+// TODO Explain how fitness is calculated
 void ABoid::CalculateAndStoreFitness(EDeathReason Reason)
 {
 	// If the fitness is empty
 	if (ShipDNA.StoredFitness < 0)
 	{
-		// First time calculating fitness
-		// Add fitness calculation here
+		// Calculate the Time fitness factor (with a square that benefits those alive)
+		const float TimeValue = FMath::Square(CurrentAliveTime / MaxInvincibility);
+		
+		// Calculate the fitness using the weightings
+		const float Fitness = (TimeValue * FitnessTimeWeighting) + (GoldCollected * FitnessGoldWeighting);
 
-		// TODO: Replace this with a real calculation
-		ShipDNA.StoredFitness = 0;
+		// Store the fitness
+		ShipDNA.StoredFitness = Fitness;
 	}
 }
 
 
 void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                 UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if(OtherActor && OtherActor != this)
 	{
