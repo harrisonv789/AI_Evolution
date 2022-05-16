@@ -14,14 +14,14 @@ class AI_EVOLUTION_API DNA
 	/*************************************************************/
 	public:
 
-	// The chance of mutation
-	static constexpr float MUTATION_CHANCE = 0.10f;
+	// The chance of mutation for each individual gene
+	static constexpr float MUTATION_CHANCE = 0.25f;
 
 	// The minimum value for a strength
 	static constexpr float MIN_STRENGTH_VALUE = 0.0f;
 
 	// The maximum value for a strength
-	static constexpr float MAX_STRENGTH_VALUE = 20000.0;
+	static constexpr float MAX_STRENGTH_VALUE = 100000.0;
 
 	// The number of strength values
 	int NumOfStrengthValues = 0;
@@ -32,6 +32,9 @@ class AI_EVOLUTION_API DNA
 	// The current fitness stored
 	int StoredFitness = -1;
 
+	// The previous fitness from the previous generation
+	int PreviousGenerationFitness = -1;
+
 	// If this DNA is optimal
 	bool IsElite = false;
 	
@@ -41,18 +44,18 @@ class AI_EVOLUTION_API DNA
 	/**
 	 * @brief Base constructor with no parameters
 	 */
-	DNA();
+	DNA ();
 	
 	/**
 	 * @brief Constructs a new DNA with a specific size
 	 * @param DNASize The size of the DNA
 	 */
-	DNA(int DNASize);
+	DNA (int DNASize);
 
 	/**
 	 * @brief Destructor of the DNA
 	 */
-	~DNA();
+	~DNA ();
 
 	/**
 	 * @brief Crosses over the DNA with another DNA creating a mutation
@@ -65,6 +68,12 @@ class AI_EVOLUTION_API DNA
 	 * @brief Mutates the current genes in the DNA
 	 */
 	void Mutation();
+
+	/**
+	 * @brief Updates the DNA to the next generation. This copies the
+	 * current fitness and moves to the next generation fitness.
+	 */
+	void NextGeneration ();
 
 	/**
 	 * @brief Copies a DNA across

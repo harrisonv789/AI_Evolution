@@ -16,6 +16,8 @@
 class USphereComponent;
 class AShipSpawner;
 
+#define GOLDEN_RATIO 1.6180339
+
 /**
  * @brief This class handles the Bird-like actors that are able to move
  * around the map with some functionality.
@@ -28,9 +30,6 @@ class AI_EVOLUTION_API ABoid : public AActor
 	/*************************************************************/
 	protected:
 
-	// List of current gas cloud forces
-    TArray<FVector> GasCloudForces;
-
 	// The minimum speed in units / s
 	float MinSpeed = 300.0f;
 
@@ -39,6 +38,30 @@ class AI_EVOLUTION_API ABoid : public AActor
 
 	// The current DNA of the ship
 	DNA ShipDNA;
+	
+	// The cloud that the ship is correctly collided with
+	UPROPERTY()
+	AGasCloud* CollisionCloud;
+
+	// The ships velocity
+	FVector BoidVelocity;
+
+	// The ships rotation
+	FRotator CurrentRotation;
+
+	// Vision properties
+	float SeparationFOV = -1.0f;
+	float AlignmentFOV = 0.5f;
+	float CohesionFOV = -0.5f;
+
+	// Avoidance Sensors
+	TArray<FVector> AvoidanceSensors;
+
+	// The distances away that a sensor can reach
+	float SensorRadius = 600.0f;
+
+	// The number of sensors
+	int NumSensors = 100;
 
 	
 
@@ -63,49 +86,23 @@ class AI_EVOLUTION_API ABoid : public AActor
 
 	// The factor to apply for the gold on the fitness function
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	float FitnessGoldWeighting = 1.0;
-
-	// The ships velocity
-	FVector BoidVelocity;
-
-	// The ships rotation
-	FRotator CurrentRotation;
-
-	// Vision properties
-	float SeparationFOV = -1.0f;
-	float AlignmentFOV = 0.5f;
-	float CohesionFOV = -0.5f;
-
+	float FitnessGoldWeighting = 10.0;
+	
 	// The maximum time being invincible
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	float MaxInvincibility = 1.0;
 
 	// The current time being invincible
+	UPROPERTY(BlueprintReadOnly)
 	float Invincibility = 0.0;
 
 	// The current time alive
 	UPROPERTY(BlueprintReadOnly)
 	float CurrentAliveTime = 0.0;
-	
-	// Avoidance Sensors
-	TArray<FVector> AvoidanceSensors;
-
-	// The distances away that a sensor can reach
-	float SensorRadius = 600.0f;
-
-	// The number of sensors
-	int NumSensors = 100;
-	
-	// Golden ratio constant used for spacing the packing points onto the sphere
-	const float GOLDEN_RATIO = (1.0f + FMath::Sqrt(5.0f)) / 2;
 
 	// The number of gold collected so far
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(BlueprintReadOnly)
 	float GoldCollected = 0.0f;
-	
-	// The cloud that the ship si correctly collided with
-	UPROPERTY()
-	AGasCloud* CollisionCloud;
 
 	// The reference to the current spawner of the ship
 	UPROPERTY()
@@ -118,21 +115,27 @@ class AI_EVOLUTION_API ABoid : public AActor
 	/*************************************************************/
 	
 	// The strength of the velocity matching of the BOIDS
+	UPROPERTY(BlueprintReadOnly)
 	float VelocityStrength = 100.0f;
 
 	// The strength to apply the separation between BOIDS
+	UPROPERTY(BlueprintReadOnly)
 	float SeparationStrength = 100.0f;
 
 	// The strength to apply to centering the flock
+	UPROPERTY(BlueprintReadOnly)
 	float CenteringStrength = 1.0f;
 
 	// The strength to apply between avoiding obstacles
+	UPROPERTY(BlueprintReadOnly)
 	float AvoidanceStrength = 10000.0f;
 
 	// The strength to apply when traversing gas clouds
+	UPROPERTY(BlueprintReadOnly)
 	float GasCloudStrength = 1.0f;
 
 	// The additional speed strength to add to maximum
+	UPROPERTY(BlueprintReadOnly)
 	float SpeedStrength = 5000.0f;
 	
 
@@ -194,6 +197,14 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 */
 	void CalculateAndStoreFitness (EDeathReason Reason);
 
+	/**
+	 * @brief This method is executed when the ship dies, for a particular reason
+	 * specified in the death reason. It will then calculate the fitness for the gene
+	 * and clean up any values required.
+	 * @param Reason The cause of the Ship's death
+	 */
+	void Death (EDeathReason Reason);
+
 	
 
 	/*************************************************************/
@@ -236,7 +247,7 @@ class AI_EVOLUTION_API ABoid : public AActor
 		UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex,  bool bFromSweep, const FHitResult& SweepResult);
 	
 	/**
-		* @brief Called when the hit-box overlapping is complete
+	 * @brief Called when the hit-box overlapping is complete
 	 * @param OverlappedComponent	The current overlapped component
 	 * @param OtherActor			The actor that is overlapping
 	 * @param OtherComponent		The other actor's component that is overlapping
@@ -245,5 +256,12 @@ class AI_EVOLUTION_API ABoid : public AActor
 	UFUNCTION()
 	void OnHitboxOverlapEnd(UPrimitiveComponent* OverlappedComponent,  AActor* OtherActor,
 			UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex);
+	
+	/**
+	 * @brief Returns the current fitness, ignoring any factors and assumes no death.
+	 * @return The current fitness stored in the DNA
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	float GetCurrentFitness ();
 	
 };

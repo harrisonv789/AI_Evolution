@@ -11,7 +11,7 @@
 UENUM(Blueprintable, BlueprintType)
 enum EDeathReason
 {
-	// No specified collision
+	// No death
     NONE				= 0,
 
 	// A collision with another ship

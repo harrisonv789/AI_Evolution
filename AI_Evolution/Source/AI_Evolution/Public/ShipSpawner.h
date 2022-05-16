@@ -52,12 +52,20 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	UPROPERTY(BlueprintReadOnly)
 	int HighestFitness = 0;
 
+	// The current highest fitness ship
+	UPROPERTY(BlueprintReadOnly)
+	ABoid* BestAliveShip;
+
 	// The current list of gas clouds spawned in the world
 	UPROPERTY()
 	TArray<AGasCloud*> GasClouds;
 
 	// The current Population of DNA
 	TArray<DNA> Population;
+
+	// The current array of ships
+	UPROPERTY()
+	TArray<ABoid*> AliveShips;
 	
 	// The list of DNA from dead ships
 	TArray<DNA> DeadDNA;
@@ -66,7 +74,7 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	static constexpr int NUM_PARENTS_PAIR = 50;
 
 	// The chance for mutation
-	static constexpr float MUTATION_CHANCE = 0.10;
+	static constexpr float MUTATION_CHANCE = 0.5;
 
 	
 
@@ -83,6 +91,13 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	 * @brief Spawns a single ship into the world
 	 */
 	void SpawnShip();
+
+	/**
+	 * @brief Finds the best ship out of all the alive ships and stores
+	 * it as a variable. This can be retrieved from the UI and displayed
+	 * on the screen to help debug issues.
+	 */
+	void FindBestShip();
 
 	/**
 	 * @brief Generates a new population of Ships
@@ -116,4 +131,12 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	 * @param Ship The ship to update
 	 */
 	void SetShipVariables(ABoid* Ship);
+
+	/**
+	 * @brief This method is executed when a ship is killed and will be
+	 * deleted from the game. This method should handle cleaning up the ship
+	 * and updating any properties in the ship arrays.
+	 * @param Ship The reference to the BOID ship that was destroyed
+	 */
+	void RemoveShip (ABoid* Ship);
 };

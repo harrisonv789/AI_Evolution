@@ -12,7 +12,6 @@ AShipSpawner::AShipSpawner()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
 }
 
 
@@ -90,12 +89,15 @@ void AShipSpawner::Tick(float DeltaTime)
 			SpawnShip();
 		}
 	}
+
+	// Find the current best ship
+	FindBestShip();
 }
 
 
 void AShipSpawner::SpawnShip()
 {
-	// Randomise the location
+	// Randomise the location of the spawn
 	const float XLoc = FMath::RandRange(-2000.0f, 2000.0f);
 	const float YLoc = FMath::RandRange(-2000.0f, 2000.0f);
 	const float ZLoc = FMath::RandRange(500.0f, 4500.0f);
@@ -104,10 +106,29 @@ void AShipSpawner::SpawnShip()
 	// Spawn the ship
 	ABoid* SpawnedShip = Cast<ABoid>(GetWorld()->SpawnActor(HarvestShip, &Location ,&FRotator::ZeroRotator));
 	SpawnedShip->Spawner = this;
+	AliveShips.Add(SpawnedShip);
 
 	// Update the variables
 	SetShipVariables(SpawnedShip);
 	NumOfShips++;
+}
+
+
+void AShipSpawner::FindBestShip()
+{
+	// The best ship's fitness score
+	float TempBestShipFitness = -1;
+
+	// Find the best alive ship
+	for (ABoid* Ship : AliveShips)
+	{
+		// If the ship's fitness is greater than the current best
+		if (Ship->GetCurrentFitness() > TempBestShipFitness || TempBestShipFitness < 0)
+		{
+			TempBestShipFitness = Ship->GetCurrentFitness();
+			BestAliveShip = Ship;
+		}
+	}
 }
 
 
@@ -191,6 +212,7 @@ TArray<DNA> AShipSpawner::ChildGeneration()
 		// Only cross over with the top parents
 		// This is Elitism
 		DNA ChildOne = Parents[i * 2 + 0].Crossover(Parents[1]);
+		UE_LOG(LogTemp, Warning, TEXT("%d"), ChildOne.StoredFitness);
 		DNA ChildTwo = Parents[i * 2 + 1].Crossover(Parents[0]);
 
 		// Mutate them
@@ -228,4 +250,21 @@ void AShipSpawner::SetShipVariables(ABoid* Ship)
 	{
 		Ship->SetDNA(DNA(6));
 	}
+}
+
+
+void AShipSpawner::RemoveShip(ABoid* Ship)
+{
+	// Subtract the number of ships
+	NumOfShips--;
+
+	// If the best ship is this ship
+	if (BestAliveShip == Ship)
+		BestAliveShip = nullptr;
+				
+	// Add the current ships' DNA to the dead DNA 
+	DeadDNA.Add(Ship->GetDNA());
+	
+	// Removes this ship from the list
+	AliveShips.Remove(Ship);
 }

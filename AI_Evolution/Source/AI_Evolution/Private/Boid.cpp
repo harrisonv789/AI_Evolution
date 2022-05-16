@@ -58,8 +58,8 @@ ABoid::ABoid()
 		const float Pitch = FMath::Acos(1 - 2 * static_cast<float>(i) / NumSensors);
 
 		// Convert point on sphere to cartesian coordinates xyz
-		SensorDirection.X = FMath::Cos(Yaw)*FMath::Sin(Pitch);
-		SensorDirection.Y = FMath::Sin(Yaw)*FMath::Sin(Pitch);
+		SensorDirection.X = FMath::Cos(Yaw) * FMath::Sin(Pitch);
+		SensorDirection.Y = FMath::Sin(Yaw) * FMath::Sin(Pitch);
 		SensorDirection.Z = FMath::Cos(Pitch);
 		
 		// Add direction to list of sensors for avoidance
@@ -100,16 +100,15 @@ void ABoid::Tick(float DeltaTime)
 
 	// If the current cloud is collided
 	if (CollisionCloud != nullptr)
-	{
 		GoldCollected += CollisionCloud->RemoveGold();
-	}
 
 	// If invincibility still exists
 	if (Invincibility > 0)
 		Invincibility -= DeltaTime;
 
-	// Increase the time alive
-	CurrentAliveTime += DeltaTime;
+	// Otherwise, increase the alive time
+	else
+		CurrentAliveTime += DeltaTime;
 }
 
 
@@ -144,14 +143,14 @@ void ABoid::UpdateMeshRotation()
 
 void ABoid::FlightPath(float DeltaTime)
 {
+	// Update the position and rotation from the previous frame
+    this->SetActorLocation(this->GetActorLocation() + BoidVelocity * DeltaTime);
+    SetActorRotation(BoidVelocity.ToOrientationQuat());
+
 	// Set the initial acceleration
 	FVector Acceleration = FVector::ZeroVector;
 
-	// Update the position and rotation
-	this->SetActorLocation(this->GetActorLocation() + BoidVelocity * DeltaTime);
-	SetActorRotation(BoidVelocity.ToOrientationQuat());
-
-	// Determine any nearby ships
+	// Determine any nearby ships from the sensor
 	TArray<AActor*> NearbyShips;
 	PerceptionSensor->GetOverlappingActors(NearbyShips, TSubclassOf<ABoid>());
 
@@ -171,23 +170,17 @@ void ABoid::FlightPath(float DeltaTime)
 		// Only within a certain distance
 		FVector Force = Spawner->GasClouds[i]->GetActorLocation() - GetActorLocation();
 		if (Force.Size() < 1500)
-			GasCloudForces.Add(Force);
-	}
-
-	// Loop through all of the gas cloud forces
-	for (FVector GasCloudForce : GasCloudForces)
-	{
-		// Adds the force to the acceleration of the clouds
-		GasCloudForce = GasCloudForce.GetSafeNormal() * GasCloudStrength;
-		Acceleration += GasCloudForce;
-		GasCloudForces.Remove(GasCloudForce);
+		{
+			// Adds the force to the acceleration of the clouds
+			Acceleration += Force.GetSafeNormal() * GasCloudStrength;
+		}
 	}
 
 	// Update the final velocity
 	BoidVelocity += Acceleration * DeltaTime;
 
 	// Clamp the velocity between some speeds
-	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, MaxSpeed + (SpeedStrength / 10000) * 300);
+	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, MaxSpeed + SpeedStrength);
 }
 
 
@@ -411,49 +404,60 @@ void ABoid::CalculateAndStoreFitness(EDeathReason Reason)
 	if (ShipDNA.StoredFitness < 0)
 	{
 		// Calculate the Time fitness factor (with a square that benefits those alive)
-		const float TimeValue = FMath::Square(CurrentAliveTime / MaxInvincibility);
+		const float TimeValue = CurrentAliveTime / MaxInvincibility;
 		
 		// Calculate the fitness using the weightings
-		const float Fitness = (TimeValue * FitnessTimeWeighting) + (GoldCollected * FitnessGoldWeighting);
+		float Fitness = (TimeValue * FitnessTimeWeighting) + (GoldCollected * FitnessGoldWeighting);
 
-		// Store the fitness
+		// Set a multiplier based on the reason
+		switch (Reason)
+		{
+			case NONE:
+				Fitness *= 1.0f; break;
+			case SHIP_COLLISION:
+				Fitness *= 0.25f; break;
+			case WALL_COLLISION:
+				Fitness *= 0.25f; break;
+			case PIRATE:
+				Fitness *= 0.50f; break;
+		}
+
+		// Update the stored fitness on the DNA
 		ShipDNA.StoredFitness = Fitness;
 	}
+}
+
+
+void ABoid::Death(EDeathReason Reason)
+{
+	// Recalculates the fitness
+	CalculateAndStoreFitness(Reason);
+
+	// Remove the Ship from the spawner
+	Spawner->RemoveShip(this);
+
+	// Update the next generation of the DNA
+	GetDNA().NextGeneration();
+
+	// Destroy this ship
+	Destroy();
 }
 
 
 void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if(OtherActor && OtherActor != this)
+	if( OtherActor && OtherActor != this)
 	{
-
-		// If currently not invincible and hitting a BOID collision
-		if (Invincibility <= 0 && OtherComponent->GetName().Equals(TEXT("Boid Collision Component")))
+		// If colliding with another actor
+		if (OtherComponent->GetName().Equals(TEXT("Boid Collision Component")))
 		{
-			// Get the cloud
-			AGasCloud* Cloud = Cast<AGasCloud>(OtherActor);
-			if (Cloud != nullptr)
-			{
-				CollisionCloud = Cloud;
-				return;
-			}
-
 			// Check for a ship
 			ABoid* Ship = Cast<ABoid>(OtherActor);
-			if (Ship != nullptr)
+			if (Ship != nullptr && Invincibility <= 0)
 			{
-				// Subtract the number of ships
-				Spawner->NumOfShips--;
-
-				// Recalculates the fitness
-				CalculateAndStoreFitness(SHIP_COLLISION);
-				
-				// Add the current ships' DNA to the dead DNA 
-				Spawner->DeadDNA.Add(ShipDNA);
-
-				// Destroy this ship
-				Destroy();
+				// Call the death function
+				Death(SHIP_COLLISION);
 				return;
 			}
 		}
@@ -462,17 +466,18 @@ void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 		if (OtherActor->GetName().Contains("Cube") &&
 			OverlappedComponent->GetName().Equals(TEXT("Boid Collision Component")))
 		{
-			Spawner->NumOfShips--;
-
-			// Recalculates the fitness
-			CalculateAndStoreFitness(WALL_COLLISION);
-			
-			// Add the current ships' DNA to the dead DNA 
-			Spawner->DeadDNA.Add(ShipDNA);
-
-			// Destroy this ship
-			Destroy();
+			// Call the death function
+			Death(WALL_COLLISION);
+			return;
 		}
+
+		// Attempt to 
+		AGasCloud* Cloud = Cast<AGasCloud>(OtherActor);
+		if (Cloud != nullptr)
+		{
+			CollisionCloud = Cloud;
+		}
+		
 	}
 }
 
@@ -482,7 +487,11 @@ void ABoid::OnHitboxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor*
 {
 	AGasCloud* cloud = Cast<AGasCloud>(OtherActor);
 	if (cloud != nullptr)
-	{
 		CollisionCloud = nullptr;
-	}
+}
+
+
+float ABoid::GetCurrentFitness()
+{
+	return GetDNA().PreviousGenerationFitness;
 }

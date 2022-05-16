@@ -18,12 +18,12 @@ DNA::DNA(int DNASize)
 
 	// Initialises the DNA with some fixed one so they are all identical
 	StrengthValues = {
-		100.0f,				// Velocity Strength
-		100.0f,				// Separation Strength
-		1.0f,				// Centering Strength
-		10000.0f,			// Avoidance Strength
-		1.0f,				// Gas Cloud Strength
-		5000.0f 			// Speed Strength
+		FMath::RandRange(1.0f, 100.0f),//100.0f,				// Velocity Strength
+		FMath::RandRange(1.0f, 100.0f),//100.0f,				// Separation Strength
+		FMath::RandRange(1.0f, 100.0f),//1.0f,				// Centering Strength
+		FMath::RandRange(1.0f, 100.0f),//10000.0f,			// Avoidance Strength
+		FMath::RandRange(1.0f, 100.0f),//1.0f,				// Gas Cloud Strength
+		FMath::RandRange(1.0f, 100.0f),//5000.0f 			// Speed Strength
 	};
 }
 
@@ -59,6 +59,10 @@ DNA DNA::Crossover (DNA Other)
 		}
 	}
 
+	// Update the previous generation to be the average of the two previous
+	NewDNA.PreviousGenerationFitness = (PreviousGenerationFitness * static_cast<float>(MidIndex) + Other.PreviousGenerationFitness
+		* static_cast<float>(NumOfStrengthValues - MidIndex)) / (NumOfStrengthValues);
+
 	// Return the new DNA
 	return NewDNA;
 }
@@ -93,6 +97,12 @@ void DNA::Mutation()
 }
 
 
+void DNA::NextGeneration()
+{
+	PreviousGenerationFitness = StoredFitness;
+}
+
+
 void DNA::operator=(const DNA& Other)
 {
 	// Makes a copy of the parameters
@@ -103,6 +113,7 @@ void DNA::operator=(const DNA& Other)
 
 	// The current fitness stored
 	StoredFitness = Other.StoredFitness;
+	PreviousGenerationFitness = Other.PreviousGenerationFitness;
 
 	// Reset the elite
 	IsElite = false;
