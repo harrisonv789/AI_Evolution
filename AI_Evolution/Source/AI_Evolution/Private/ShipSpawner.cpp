@@ -47,6 +47,9 @@ void AShipSpawner::BeginPlay()
 void AShipSpawner::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	// Increase the generation alive time
+	GenerationAliveTime += DeltaTime;
 
 	// If the number of ships is less than 20% of the maximum
 	if (NumOfShips < MaxShipCount * 0.2)
@@ -65,12 +68,26 @@ void AShipSpawner::Tick(float DeltaTime)
 		// Loop through all the alive harvesters
 		for (const auto Ship : AliveHarvesters)
 		{
-			Population.Add(Cast<ABoid>(Ship)->GetDNA());
+			ABoid* Boid = Cast<ABoid>(Ship);
+			Population.Add(Boid->GetDNA());
+
+			// Calculate the fitness scores of all alive ships
+			Boid->CalculateAndStoreFitness(NONE);
 		}
+
+		// Find the current best ship of the previous generation 
+		FindBestShip();
 
 		// Add the Dead DNA to the population
 		Population.Append(DeadDNA);
 		DeadDNA.Empty();
+
+		// Clear the dead statistics
+		DeadStatistics.Empty();
+
+		// Add the time to the generation and reset
+		GenerationDeathTimes.Add(GenerationAliveTime);
+		GenerationAliveTime = 0.0;
 
 		// Generate a new population with the child generation
 		GeneratePopulation(ChildGeneration());
@@ -89,9 +106,6 @@ void AShipSpawner::Tick(float DeltaTime)
 			SpawnShip();
 		}
 	}
-
-	// Find the current best ship
-	FindBestShip();
 }
 
 
@@ -126,7 +140,18 @@ void AShipSpawner::FindBestShip()
 		if (Ship->GetCurrentFitness() > TempBestShipFitness || TempBestShipFitness < 0)
 		{
 			TempBestShipFitness = Ship->GetCurrentFitness();
-			BestAliveShip = Ship;
+			BestShipInGeneration = Ship->ShipStatistics;
+		}
+	}
+
+	// The highest fitness could be a dead ship
+	for (const FShipDataContainer Data : DeadStatistics)
+	{
+		// If the ship's fitness is greater than the current best
+		if (Data.Fitness > TempBestShipFitness || TempBestShipFitness < 0)
+		{
+			TempBestShipFitness = Data.Fitness;
+			BestShipInGeneration = Data;
 		}
 	}
 }
@@ -190,13 +215,6 @@ TArray<DNA> AShipSpawner::ChildGeneration()
 			// Remove parents from population
 			Population.RemoveAt(DNAIndex);
 		}
-
-		// Store the current highest fitness
-		// TODO: Might not be best here
-		if (TempHighestFitness > HighestFitness)
-		{
-			HighestFitness = TempHighestFitness;
-		}
 	}
 
 	// Create children array and set up to be added to population
@@ -258,9 +276,8 @@ void AShipSpawner::RemoveShip(ABoid* Ship)
 	// Subtract the number of ships
 	NumOfShips--;
 
-	// If the best ship is this ship
-	if (BestAliveShip == Ship)
-		BestAliveShip = nullptr;
+	// Add the ship's statistics
+	DeadStatistics.Add(Ship->ShipStatistics);
 				
 	// Add the current ships' DNA to the dead DNA 
 	DeadDNA.Add(Ship->GetDNA());

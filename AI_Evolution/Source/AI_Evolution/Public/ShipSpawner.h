@@ -14,13 +14,28 @@
 
 /**
  * @brief The default ship spawner class that handles spawning in ships
- * into the game world.
+ * into the game world. This spawner class also handles the evolution of
+ * ships in the world. It evolves the ships after a certain amount of
+ * ships are killed.
  */
 UCLASS()
 class AI_EVOLUTION_API AShipSpawner : public AActor
 {
 	GENERATED_BODY()
 
+	/*************************************************************/
+	private:
+	
+	// The number of parents
+	static constexpr int NUM_PARENTS_PAIR = 50;
+
+	// The chance for mutation
+	static constexpr float MUTATION_CHANCE = 0.5;
+
+	// The current time the generation has been alive for
+	float GenerationAliveTime = 0;
+
+	
 	/*************************************************************/
 	public:
 
@@ -48,13 +63,9 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	UPROPERTY(BlueprintReadOnly)
 	int NumGenerations = 0;
 
-	// The current highest fitness
+	// The current highest fitness's ship from previous generation
 	UPROPERTY(BlueprintReadOnly)
-	int HighestFitness = 0;
-
-	// The current highest fitness ship
-	UPROPERTY(BlueprintReadOnly)
-	ABoid* BestAliveShip;
+	FShipDataContainer BestShipInGeneration;
 
 	// The current list of gas clouds spawned in the world
 	UPROPERTY()
@@ -66,15 +77,16 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	// The current array of ships
 	UPROPERTY()
 	TArray<ABoid*> AliveShips;
+
+	// The array of dead statistics
+	TArray<FShipDataContainer> DeadStatistics;
 	
 	// The list of DNA from dead ships
 	TArray<DNA> DeadDNA;
 
-	// The number of parents
-	static constexpr int NUM_PARENTS_PAIR = 50;
-
-	// The chance for mutation
-	static constexpr float MUTATION_CHANCE = 0.5;
+	// A list of times it took for the generation to die
+	UPROPERTY(BlueprintReadOnly)
+	TArray<float> GenerationDeathTimes;
 
 	
 

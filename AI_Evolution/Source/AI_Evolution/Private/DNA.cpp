@@ -59,10 +59,6 @@ DNA DNA::Crossover (DNA Other)
 		}
 	}
 
-	// Update the previous generation to be the average of the two previous
-	NewDNA.PreviousGenerationFitness = (PreviousGenerationFitness * static_cast<float>(MidIndex) + Other.PreviousGenerationFitness
-		* static_cast<float>(NumOfStrengthValues - MidIndex)) / (NumOfStrengthValues);
-
 	// Return the new DNA
 	return NewDNA;
 }
@@ -97,12 +93,6 @@ void DNA::Mutation()
 }
 
 
-void DNA::NextGeneration()
-{
-	PreviousGenerationFitness = StoredFitness;
-}
-
-
 void DNA::operator=(const DNA& Other)
 {
 	// Makes a copy of the parameters
@@ -113,8 +103,4 @@ void DNA::operator=(const DNA& Other)
 
 	// The current fitness stored
 	StoredFitness = Other.StoredFitness;
-	PreviousGenerationFitness = Other.PreviousGenerationFitness;
-
-	// Reset the elite
-	IsElite = false;
 }

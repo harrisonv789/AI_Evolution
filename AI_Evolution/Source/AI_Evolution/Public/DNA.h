@@ -7,7 +7,8 @@
 
 /**
  * @brief The class that handles the DNA storing data about the
- * genes of the agents.
+ * genes of the agents. The DNA is a fixed-length genome structure
+ * for handling a specific number of strength values.
  */
 class AI_EVOLUTION_API DNA
 {
@@ -30,13 +31,7 @@ class AI_EVOLUTION_API DNA
 	TArray<float> StrengthValues;
 
 	// The current fitness stored
-	int StoredFitness = -1;
-
-	// The previous fitness from the previous generation
-	int PreviousGenerationFitness = -1;
-
-	// If this DNA is optimal
-	bool IsElite = false;
+	float StoredFitness = -1;
 	
 
 	/*************************************************************/
@@ -68,12 +63,6 @@ class AI_EVOLUTION_API DNA
 	 * @brief Mutates the current genes in the DNA
 	 */
 	void Mutation();
-
-	/**
-	 * @brief Updates the DNA to the next generation. This copies the
-	 * current fitness and moves to the next generation fitness.
-	 */
-	void NextGeneration ();
 
 	/**
 	 * @brief Copies a DNA across

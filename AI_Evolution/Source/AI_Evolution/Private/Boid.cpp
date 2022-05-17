@@ -51,6 +51,7 @@ ABoid::ABoid()
 	// Direction vector pointing from the center to point on sphere surface
 	FVector SensorDirection;
 
+	// Initialise the sensors
 	for (int32 i = 0; i < NumSensors; ++i)
 	{
 		// Calculate the spherical coordinates of the direction vectors endpoint
@@ -130,6 +131,28 @@ void ABoid::SetDNA(DNA NewDNA)
 DNA ABoid::GetDNA()
 {
 	return ShipDNA;
+}
+
+
+void ABoid::UpdateStatistics()
+{
+	// Update the general information
+	ShipStatistics.Gold = GoldCollected;
+	ShipStatistics.TimeAlive = CurrentAliveTime;
+
+	// Update the strength values
+	ShipStatistics.StrengthAlignment = VelocityStrength;
+	ShipStatistics.StrengthAvoidance = AvoidanceStrength;
+	ShipStatistics.StrengthCentering = CenteringStrength;
+	ShipStatistics.StrengthSeparation = SeparationStrength;
+	ShipStatistics.StrengthSpeed = SpeedStrength;
+	ShipStatistics.StrengthGasCloud = GasCloudStrength;
+
+	// Calculate the fitness
+	ShipStatistics.Fitness = GetCurrentFitness();
+
+	// Ensure the statistics is valid
+	ShipStatistics.IsValid = true;
 }
 
 
@@ -400,31 +423,30 @@ bool ABoid::IsObstacleAhead()
 // TODO Explain how fitness is calculated
 void ABoid::CalculateAndStoreFitness(EDeathReason Reason)
 {
-	// If the fitness is empty
-	if (ShipDNA.StoredFitness < 0)
-	{
-		// Calculate the Time fitness factor (with a square that benefits those alive)
-		const float TimeValue = CurrentAliveTime / MaxInvincibility;
+	// Calculate the Time fitness factor (with a square that benefits those alive)
+	const float TimeValue = CurrentAliveTime / MaxInvincibility;
 		
-		// Calculate the fitness using the weightings
-		float Fitness = (TimeValue * FitnessTimeWeighting) + (GoldCollected * FitnessGoldWeighting);
+	// Calculate the fitness using the weightings
+	float Fitness = (TimeValue * FitnessTimeWeighting) + (GoldCollected * FitnessGoldWeighting);
 
-		// Set a multiplier based on the reason
-		switch (Reason)
-		{
-			case NONE:
-				Fitness *= 1.0f; break;
-			case SHIP_COLLISION:
-				Fitness *= 0.25f; break;
-			case WALL_COLLISION:
-				Fitness *= 0.25f; break;
-			case PIRATE:
-				Fitness *= 0.50f; break;
-		}
-
-		// Update the stored fitness on the DNA
-		ShipDNA.StoredFitness = Fitness;
+	// Set a multiplier based on the reason
+	switch (Reason)
+	{
+	case NONE:
+		Fitness *= 1.0f; break;
+	case SHIP_COLLISION:
+		Fitness *= 0.25f; break;
+	case WALL_COLLISION:
+		Fitness *= 0.25f; break;
+	case PIRATE:
+		Fitness *= 0.50f; break;
 	}
+
+	// Update the stored fitness on the DNA
+	ShipDNA.StoredFitness = Fitness;
+
+	// Update the statistics
+	UpdateStatistics();
 }
 
 
@@ -435,9 +457,6 @@ void ABoid::Death(EDeathReason Reason)
 
 	// Remove the Ship from the spawner
 	Spawner->RemoveShip(this);
-
-	// Update the next generation of the DNA
-	GetDNA().NextGeneration();
 
 	// Destroy this ship
 	Destroy();
@@ -493,5 +512,5 @@ void ABoid::OnHitboxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor*
 
 float ABoid::GetCurrentFitness()
 {
-	return GetDNA().PreviousGenerationFitness;
+	return GetDNA().StoredFitness;
 }

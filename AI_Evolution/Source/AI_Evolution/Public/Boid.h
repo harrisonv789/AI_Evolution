@@ -9,6 +9,7 @@
 #include "DeathReason.h"
 #include "DNA.h"
 #include "GasCloud.h"
+#include "ShipDataContainer.h"
 #include "GameFramework/Actor.h"
 #include "Boid.generated.h"
 
@@ -63,6 +64,29 @@ class AI_EVOLUTION_API ABoid : public AActor
 	// The number of sensors
 	int NumSensors = 100;
 
+
+	/*************************************************************/
+	// EVOLUTIONARY PROPERTIES
+	/*************************************************************/
+	
+	// The strength of the velocity matching of the BOIDS
+	float VelocityStrength = 100.0f;
+
+	// The strength to apply the separation between BOIDS
+	float SeparationStrength = 100.0f;
+
+	// The strength to apply to centering the flock
+	float CenteringStrength = 1.0f;
+
+	// The strength to apply between avoiding obstacles
+	float AvoidanceStrength = 10000.0f;
+
+	// The strength to apply when traversing gas clouds
+	float GasCloudStrength = 1.0f;
+
+	// The additional speed strength to add to maximum
+	float SpeedStrength = 5000.0f;
+
 	
 
 	/*************************************************************/
@@ -86,7 +110,7 @@ class AI_EVOLUTION_API ABoid : public AActor
 
 	// The factor to apply for the gold on the fitness function
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	float FitnessGoldWeighting = 10.0;
+	float FitnessGoldWeighting = 20.0;
 	
 	// The maximum time being invincible
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
@@ -108,35 +132,10 @@ class AI_EVOLUTION_API ABoid : public AActor
 	UPROPERTY()
 	AShipSpawner* Spawner;
 
+	// The current ship statistics related to the ship's life
+	UPROPERTY(VisibleAnywhere)
+	FShipDataContainer ShipStatistics;
 
-	
-	/*************************************************************/
-	// EVOLUTIONARY PROPERTIES
-	/*************************************************************/
-	
-	// The strength of the velocity matching of the BOIDS
-	UPROPERTY(BlueprintReadOnly)
-	float VelocityStrength = 100.0f;
-
-	// The strength to apply the separation between BOIDS
-	UPROPERTY(BlueprintReadOnly)
-	float SeparationStrength = 100.0f;
-
-	// The strength to apply to centering the flock
-	UPROPERTY(BlueprintReadOnly)
-	float CenteringStrength = 1.0f;
-
-	// The strength to apply between avoiding obstacles
-	UPROPERTY(BlueprintReadOnly)
-	float AvoidanceStrength = 10000.0f;
-
-	// The strength to apply when traversing gas clouds
-	UPROPERTY(BlueprintReadOnly)
-	float GasCloudStrength = 1.0f;
-
-	// The additional speed strength to add to maximum
-	UPROPERTY(BlueprintReadOnly)
-	float SpeedStrength = 5000.0f;
 	
 
 	/*************************************************************/
@@ -192,12 +191,6 @@ class AI_EVOLUTION_API ABoid : public AActor
 	bool IsObstacleAhead();
 
 	/**
-	 * @brief Calculates a new fitness value and stores the fitness in the DNA
-	 * @param Reason The cause of the death
-	 */
-	void CalculateAndStoreFitness (EDeathReason Reason);
-
-	/**
 	 * @brief This method is executed when the ship dies, for a particular reason
 	 * specified in the death reason. It will then calculate the fitness for the gene
 	 * and clean up any values required.
@@ -232,6 +225,18 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * @return The DNA of the Ship
 	 */
 	DNA GetDNA ();
+
+	/**
+	 * @brief Calculates a new fitness value and stores the fitness in the DNA
+	 * @param Reason The cause of the death
+	 */
+	void CalculateAndStoreFitness (EDeathReason Reason);
+
+	/**
+	 * @brief Updates the statistics of the ship to the values
+	 * of the current ship's lifetime.
+	 */
+	void UpdateStatistics ();
 	
 	/**
 	 * @brief Called when the hit-box is overlapped
