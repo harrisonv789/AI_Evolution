@@ -125,6 +125,12 @@ void ABoid::SetDNA(DNA NewDNA)
 	AvoidanceStrength = ShipDNA.StrengthValues[3];
 	GasCloudStrength = ShipDNA.StrengthValues[4];
 	SpeedStrength = ShipDNA.StrengthValues[5];
+
+	// Reset the current alive time
+	CurrentAliveTime = 0.0;
+
+	// Reset the current gold
+	GoldCollected = 0.0;
 }
 
 

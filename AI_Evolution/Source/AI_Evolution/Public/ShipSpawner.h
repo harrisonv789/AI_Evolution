@@ -25,9 +25,12 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 
 	/*************************************************************/
 	private:
+
+	// The number of selected DNA for evolving
+	static constexpr int NUM_SELECTED_PARENTS = 20;
 	
-	// The number of parents
-	static constexpr int NUM_PARENTS_PAIR = 50;
+	// The number of children to evolve based on parental genes
+	static constexpr int NUM_EVOLVED_CHILDREN = 250;
 
 	// The chance for mutation
 	static constexpr float MUTATION_CHANCE = 0.5;
@@ -41,7 +44,7 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 
 	// The maximum number of ships that must exist in the world
 	UPROPERTY(EditAnywhere, Category = "Entities")
-	float MaxShipCount = 300;
+	int MaxShipCount = 300;
 
 	// The type of ship to spawn in the world
 	UPROPERTY(EditAnywhere, Category = "Entities")
@@ -88,6 +91,14 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	UPROPERTY(BlueprintReadOnly)
 	TArray<float> GenerationDeathTimes;
 
+	// A list of the best fitneses over the generations
+	UPROPERTY(BlueprintReadOnly)
+	TArray<float> GenerationBestFitness;
+
+	// A list of fitness medians over the generations
+	UPROPERTY(BlueprintReadOnly)
+	TArray<float> GenerationMedianFitness;
+
 	
 
 
@@ -109,7 +120,7 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	 * it as a variable. This can be retrieved from the UI and displayed
 	 * on the screen to help debug issues.
 	 */
-	void FindBestShip();
+	void FindBestShipData();
 
 	/**
 	 * @brief Generates a new population of Ships
@@ -122,6 +133,17 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	 * @return The child generation created
 	 */
 	TArray<DNA> ChildGeneration ();
+
+	/**
+	 * @brief A sorting function that returns whether the first DNA is greater
+	 * than the second DNA. This is sent into the sorting algorithm to correctly
+	 * sort between the Population based on the highest DNA. This can be done using
+	 * the TArray::Sort function and passing in this as a reference.
+	 * @param A The first DNA
+	 * @param B The second DNA
+	 * @return Whether the first DNA is greater than the second DNA
+	 */
+	static bool SortFitness (DNA A, DNA B);
 	
 	
 	/*************************************************************/

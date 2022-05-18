@@ -70,22 +70,22 @@ class AI_EVOLUTION_API ABoid : public AActor
 	/*************************************************************/
 	
 	// The strength of the velocity matching of the BOIDS
-	float VelocityStrength = 100.0f;
+	float VelocityStrength = 1.0f;
 
 	// The strength to apply the separation between BOIDS
-	float SeparationStrength = 100.0f;
+	float SeparationStrength = 1.0f;
 
 	// The strength to apply to centering the flock
 	float CenteringStrength = 1.0f;
 
 	// The strength to apply between avoiding obstacles
-	float AvoidanceStrength = 10000.0f;
+	float AvoidanceStrength = 1.0f;
 
 	// The strength to apply when traversing gas clouds
 	float GasCloudStrength = 1.0f;
 
 	// The additional speed strength to add to maximum
-	float SpeedStrength = 5000.0f;
+	float SpeedStrength = 1.0f;
 
 	
 
@@ -114,7 +114,7 @@ class AI_EVOLUTION_API ABoid : public AActor
 	
 	// The maximum time being invincible
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	float MaxInvincibility = 1.0;
+	float MaxInvincibility = 0.1;
 
 	// The current time being invincible
 	UPROPERTY(BlueprintReadOnly)

@@ -16,14 +16,14 @@ DNA::DNA(int DNASize)
 	// Update the size of the fixed-length genome (this will not change for this simulation)
 	NumOfStrengthValues = DNASize;
 
-	// Initialises the DNA with some fixed one so they are all identical
+	// Initialises the DNA with some a random value for now
 	StrengthValues = {
-		FMath::RandRange(1.0f, 100.0f),//100.0f,				// Velocity Strength
-		FMath::RandRange(1.0f, 100.0f),//100.0f,				// Separation Strength
-		FMath::RandRange(1.0f, 100.0f),//1.0f,				// Centering Strength
-		FMath::RandRange(1.0f, 100.0f),//10000.0f,			// Avoidance Strength
-		FMath::RandRange(1.0f, 100.0f),//1.0f,				// Gas Cloud Strength
-		FMath::RandRange(1.0f, 100.0f),//5000.0f 			// Speed Strength
+		FMath::RandRange(1.0f, 1000.0f),//100.0f,			// Velocity Strength
+		FMath::RandRange(1.0f, 1000.0f),//100.0f,			// Separation Strength
+		FMath::RandRange(1.0f, 1000.0f),//1.0f,				// Centering Strength
+		10000.0f,														// Avoidance Strength
+		FMath::RandRange(1.0f, 1000.0f),//1.0f,				// Gas Cloud Strength
+		FMath::RandRange(1.0f, 1000.0f),//5000.0f 			// Speed Strength
 	};
 }
 
@@ -48,15 +48,11 @@ DNA DNA::Crossover (DNA Other)
 	{
 		// If using this gene
 		if (i < MidIndex)
-		{
 			NewDNA.StrengthValues[i] = StrengthValues[i];
-		}
 
 		// If using the other gene
 		else
-		{
 			NewDNA.StrengthValues[i] = Other.StrengthValues[i];
-		}
 	}
 
 	// Return the new DNA
@@ -74,19 +70,16 @@ void DNA::Mutation()
 		if (FMath::RandRange(0.0f, 1.0f) < MUTATION_CHANCE)
 		{
 			// The mutation adjustment %
-			constexpr float MUTATION_ADJUSTMENT = 0.05f;
-			
-			// Either decrease or increase by somewhere between 5 and -5% of the value
-			const float Delta = StrengthValues[i] * MUTATION_ADJUSTMENT;
+			constexpr float MUTATION_ADJUSTMENT = 0.10f;
 
 			// Calculate the min and max for the random
-			const float MinStrength = StrengthValues[i] - Delta;
-			const float MaxStrength = StrengthValues[i] + Delta;
+			const float MinStrength = StrengthValues[i] * (1 - MUTATION_ADJUSTMENT);
+			const float MaxStrength = StrengthValues[i] * (1 + MUTATION_ADJUSTMENT);
 			
-			// Adjust the value
+			// Adjust the value ot a new random one
 			StrengthValues[i] = FMath::RandRange(MinStrength, MaxStrength);
 
-			// Clamp the value
+			// Clamp the value within the bounds
 			StrengthValues[i] = FMath::Clamp(StrengthValues[i], MIN_STRENGTH_VALUE, MAX_STRENGTH_VALUE);
 		}
 	}

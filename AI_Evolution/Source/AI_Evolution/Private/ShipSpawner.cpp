@@ -57,26 +57,25 @@ void AShipSpawner::Tick(float DeltaTime)
 		// The current alive harvesters from the world
 		TArray<AActor*> AliveHarvesters;
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABoid::StaticClass(), AliveHarvesters);
-
-		// Generate the Next Generation
-		// We have 2 lists (alive ships with DNA and a list of dead DNA)
-		// ...
-
-		// Clear the population
+		
+		// Clear the population of DNA
 		Population.Empty();
 
 		// Loop through all the alive harvesters
 		for (const auto Ship : AliveHarvesters)
 		{
+			// Add the current population to the list
 			ABoid* Boid = Cast<ABoid>(Ship);
-			Population.Add(Boid->GetDNA());
 
 			// Calculate the fitness scores of all alive ships
 			Boid->CalculateAndStoreFitness(NONE);
+
+			// Get the current population DNA
+			Population.Add(Boid->GetDNA());
 		}
 
 		// Find the current best ship of the previous generation 
-		FindBestShip();
+		FindBestShipData();
 
 		// Add the Dead DNA to the population
 		Population.Append(DeadDNA);
@@ -89,6 +88,13 @@ void AShipSpawner::Tick(float DeltaTime)
 		GenerationDeathTimes.Add(GenerationAliveTime);
 		GenerationAliveTime = 0.0;
 
+		// Sort the population based on fitness
+		Population.Sort(&SortFitness);
+
+		// Add the median and best population fitness
+		GenerationBestFitness.Add(Population[0].StoredFitness);
+		GenerationMedianFitness.Add(Population[Population.Num() / 2].StoredFitness);
+
 		// Generate a new population with the child generation
 		GeneratePopulation(ChildGeneration());
 
@@ -96,8 +102,7 @@ void AShipSpawner::Tick(float DeltaTime)
 		for (const auto Ship : AliveHarvesters)
 		{
 			// Updates the DNA to the current population
-			Cast<ABoid>(Ship)->SetDNA(Population[0]);
-			Population.RemoveAt(0);
+			SetShipVariables(Cast<ABoid>(Ship));
 		}
 	
 		// Spawn more ships
@@ -128,7 +133,7 @@ void AShipSpawner::SpawnShip()
 }
 
 
-void AShipSpawner::FindBestShip()
+void AShipSpawner::FindBestShipData()
 {
 	// The best ship's fitness score
 	float TempBestShipFitness = -1;
@@ -175,7 +180,9 @@ void AShipSpawner::GeneratePopulation(TArray<DNA> NewChildren)
 
 		// Create the remainder of the DNA
 		for (int i = 0; i < MaxShipCount - NewChildren.Num(); ++i)
+		{
 			Population.Add(DNA(6));
+		}
 	}
 
 	// Increase the number of generations
@@ -183,12 +190,57 @@ void AShipSpawner::GeneratePopulation(TArray<DNA> NewChildren)
 }
 
 
+bool AShipSpawner::SortFitness (DNA A, DNA B)
+{
+	return (A.StoredFitness > B.StoredFitness);
+}
+
 
 TArray<DNA> AShipSpawner::ChildGeneration()
 {
-	// Get a list of parents
-	TArray<DNA> Parents;
+	// Get a list of children to output
+	TArray<DNA> NewChildren;
 
+	// ASSUME THAT THE POPULATION HAS ALREADY BEEN SORTED BY FITNESS
+	// THIS IS DONE IN THE TICK FUNCTION
+
+	// Create an array that lists all the indexes of the selected DNA,
+	// where the first rank has more in the array than the second and
+	// so on.
+	TArray<int> RankingIndex;
+	for (int i = 0; i < NUM_SELECTED_PARENTS; ++i)
+		for (int j = 0; j < NUM_SELECTED_PARENTS - i; ++j)
+			RankingIndex.Add(i);
+
+	// Loop through the number of children to evolve
+	for (int i = 0; i < NUM_EVOLVED_CHILDREN; ++i)
+	{
+		// Pick two random values for the ranking
+		const int RandomIndexA = RankingIndex[FMath::RandRange(0, RankingIndex.Num() - 1)];
+		const int RandomIndexB = RankingIndex[FMath::RandRange(0, RankingIndex.Num() - 1)];
+
+		// Find two parents based on these indexes
+		DNA ParentA = Population[RandomIndexA];
+		DNA ParentB = Population[RandomIndexB];
+
+		// Create a child
+		DNA Child = ParentA.Crossover(ParentB);
+
+		// Check if should mutate the child's genes
+		if (FMath::RandRange(0.0f, 1.0f) < MUTATION_CHANCE)
+		{
+			// Mutate the child
+			Child.Mutation();
+		}
+
+		// Adds the child to the list
+		NewChildren.Add(Child);
+	}
+
+	// Return the final list of children
+	return NewChildren;
+
+	/*
 	// Loop through the number of parents
 	for (int i = 0; i < NUM_PARENTS_PAIR * 2; ++i)
 	{
@@ -230,7 +282,6 @@ TArray<DNA> AShipSpawner::ChildGeneration()
 		// Only cross over with the top parents
 		// This is Elitism
 		DNA ChildOne = Parents[i * 2 + 0].Crossover(Parents[1]);
-		UE_LOG(LogTemp, Warning, TEXT("%d"), ChildOne.StoredFitness);
 		DNA ChildTwo = Parents[i * 2 + 1].Crossover(Parents[0]);
 
 		// Mutate them
@@ -250,6 +301,7 @@ TArray<DNA> AShipSpawner::ChildGeneration()
 
 	// Return the children
 	return NewChildren;
+	*/
 }
 
 
