@@ -75,7 +75,7 @@ void ABoid::BeginPlay()
 	// Set velocity based on spawn rotation and flock speed settings
 	BoidVelocity = this->GetActorForwardVector();
 	BoidVelocity.Normalize();
-	BoidVelocity *= FMath::FRandRange(MinSpeed, MaxSpeed);
+	BoidVelocity *= FMath::FRandRange(GetMinSpeed(), GetMaxSpeed());
 
 	// Add in the events for the overlap components
 	BoidCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoid::OnHitBoxOverlapBegin);
@@ -121,6 +121,9 @@ void ABoid::ReplaceDNA()
 
 	// Reset the current alive time
 	CurrentAliveTime = 0.0;
+
+	// Reset the current gold count
+	GoldCollected = 0.0;
 }
 
 
@@ -144,6 +147,9 @@ void ABoid::UpdateStatistics()
 	ShipStatistics.StrengthSeparation = SeparationStrength;
 	ShipStatistics.StrengthGasCloud = GasCloudStrength;
 
+	// Update the gold value
+	ShipStatistics.Gold = GoldCollected;
+
 	// Calculate the fitness
 	ShipStatistics.Fitness = GetCurrentFitness();
 
@@ -161,6 +167,13 @@ void ABoid::UpdateMeshRotation()
 }
 
 
+// Returns thew ship filtering
+TSubclassOf<AActor> ABoid::GetShipFilter()
+{
+	return TSubclassOf<ABoid>();
+}
+
+
 // Create the flight path
 void ABoid::FlightPath(float DeltaTime)
 {
@@ -173,7 +186,7 @@ void ABoid::FlightPath(float DeltaTime)
 
 	// Determine any nearby ships from the sensor
 	TArray<AActor*> NearbyShips;
-	PerceptionSensor->GetOverlappingActors(NearbyShips, TSubclassOf<ABoid>());
+	PerceptionSensor->GetOverlappingActors(NearbyShips, GetShipFilter());
 
 	// Add in the three rules of Boids
 	Acceleration += AvoidShips(NearbyShips).GetSafeNormal() * SeparationStrength;;
@@ -191,7 +204,7 @@ void ABoid::FlightPath(float DeltaTime)
 	BoidVelocity += Acceleration * DeltaTime;
 
 	// Clamp the velocity between some speeds
-	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, GetMaxSpeed());
+	BoidVelocity = BoidVelocity.GetClampedToSize(GetMinSpeed(), GetMaxSpeed());
 }
 
 
@@ -436,6 +449,13 @@ bool ABoid::IsObstacleAhead()
 }
 
 
+// Gets the minimum speed of the BOID
+float ABoid::GetMinSpeed()
+{
+	return MinSpeed;
+}
+
+
 // Gets the maximum speed of the BOID
 float ABoid::GetMaxSpeed()
 {
@@ -471,21 +491,9 @@ void ABoid::Death(EDeathReason Reason)
 void ABoid::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if( OtherActor && OtherActor != this)
+	// If there is a physical collision
+	if(OtherActor && OtherActor != this)
 	{
-		// If colliding with another actor
-		if (OtherComponent->GetName().Equals(TEXT("Boid Collision Component")))
-		{
-			// Check for a ship
-			ABoid* Ship = Cast<ABoid>(OtherActor);
-			if (Ship != nullptr && Invincibility <= 0)
-			{
-				// Call the death function
-				Death(SHIP_COLLISION);
-				return;
-			}
-		}
-
 		// If the other actor is a cube (like a wall that it collides with)
 		if (OtherActor->GetName().Contains("Cube") &&
 			OverlappedComponent->GetName().Equals(TEXT("Boid Collision Component")))

@@ -62,7 +62,7 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 
 	// The maximum number of gas clouds to spawn into the world
 	UPROPERTY(EditAnywhere, Category = "Entities")
-	float MaxGasCloudCount = 5;
+	int MaxGasCloudCount = 10;
 
 	// The class for the gas cloud to spawn
 	UPROPERTY(EditAnywhere, Category = "Entities")

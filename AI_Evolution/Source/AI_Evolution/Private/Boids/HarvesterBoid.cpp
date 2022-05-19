@@ -5,7 +5,6 @@
 
 #include "Boids/HarvesterBoid.h"
 
-
 // Called when the game starts or when spawned
 void AHarvesterBoid::BeginPlay()
 {
@@ -45,9 +44,6 @@ void AHarvesterBoid::ReplaceDNA()
 
 	// Also replace the speed strength
 	SpeedStrength = ShipDNA.StrengthValues[5];
-
-	// Reset the current gold count
-	GoldCollected = 0.0;
 }
 
 
@@ -87,9 +83,6 @@ void AHarvesterBoid::UpdateStatistics()
 	// Update the speed strength
 	ShipStatistics.StrengthSpeed = SpeedStrength;
 
-	// Update the gold value
-	ShipStatistics.Gold = GoldCollected;
-
 	// Update the base statistic information
 	// This is called after as the fitness is calculated
 	Super::UpdateStatistics();
@@ -102,6 +95,27 @@ void AHarvesterBoid::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedCompone
 {
 	// Call the base event function call
 	Super::OnHitBoxOverlapBegin(OverlappedComponent, OtherActor, OtherComponent, OtherBodyIndex, bFromSweep, SweepResult);
+
+	// If colliding with another actor
+	if (OtherComponent->GetName().Equals(TEXT("Boid Collision Component")))
+	{
+		// Check for a ship
+		ABoid* Ship = Cast<ABoid>(OtherActor);
+		if (Ship != nullptr && Invincibility <= 0)
+		{
+			// Check for a harvester ship
+			if (OtherActor->IsA(StaticClass()))
+			{
+				// Call the death function for pirates
+				Death(SHIP_COLLISION);
+
+				// Avoid any other functionality in this function
+				return;
+			}
+
+			// Pirate collisions are handled by the pirate
+		}
+	}
 
 	// Attempt to get the cloud from the collision
 	AGasCloud* Cloud = Cast<AGasCloud>(OtherActor);

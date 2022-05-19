@@ -46,10 +46,6 @@ class AI_EVOLUTION_API AHarvesterBoid : public ABoid
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float FitnessGoldWeighting = 5.0f;
 
-	// The amount of gold collected so far.
-	UPROPERTY(BlueprintReadOnly)
-	float GoldCollected = 0.0f;
-
 
 	/*************************************************************/
 	protected:

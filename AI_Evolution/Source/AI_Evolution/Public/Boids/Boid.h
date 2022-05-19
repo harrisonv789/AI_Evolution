@@ -120,6 +120,10 @@ class AI_EVOLUTION_API ABoid : public AActor
 	UPROPERTY(BlueprintReadOnly)
 	float CurrentAliveTime = 0.0;
 
+	// The amount of gold collected so far.
+	UPROPERTY(BlueprintReadOnly)
+	float GoldCollected = 0.0f;
+
 	// The reference to the current spawner of the ship
 	UPROPERTY()
 	AShipSpawner* Spawner;
@@ -150,6 +154,15 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * as their velocity.
 	 */
 	void UpdateMeshRotation();
+
+	/**
+	 * @brief This method returns the class that the flocking mechanism
+	 * should be looking for. This ensures that the ships are correctly
+	 * moved towards when attempting to flock. In most cases, this should
+	 * be the base BOID class to avoid.
+	 * @return The current filtering of the ships.
+	 */
+	virtual TSubclassOf<AActor> GetShipFilter ();
 
 	/**
 	 * @brief Attempts to avoid other ships nearby and returns a force vector.
@@ -204,21 +217,20 @@ class AI_EVOLUTION_API ABoid : public AActor
 	bool IsObstacleAhead();
 
 	/**
+	 * @brief This method returns the minimum speed that a BOID can
+	 * move at. This may be different between different species of
+	 * BOIDs as some may have a constant speed.
+	 * @return [u/s] The minimum speed that a BOID can move at.
+	 */
+	virtual float GetMinSpeed ();
+
+	/**
 	 * @brief This method returns the maximum speed that a BOID
 	 * can move at. This may adjust if there are additional values
 	 * that exist in the DNA to affect the maximum speed of a BOID.
 	 * @return [u/s] The maximum speed that a BOID can move at.
 	 */
 	virtual float GetMaxSpeed ();
-
-	/**
-	 * @brief This method is executed when the ship dies, for a particular reason
-	 * specified in the death reason. It will then calculate the fitness for the gene
-	 * and clean up any values required.
-	 * @param Reason The cause of the Ship's death
-	 */
-	void Death (EDeathReason Reason);
-
 	
 
 	/*************************************************************/
@@ -289,6 +301,14 @@ class AI_EVOLUTION_API ABoid : public AActor
 	UFUNCTION()
 	virtual void OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent,  AActor* OtherActor,
 		UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex,  bool bFromSweep, const FHitResult& SweepResult);
+
+	/**
+	 * @brief This method is executed when the ship dies, for a particular reason
+	 * specified in the death reason. It will then calculate the fitness for the gene
+	 * and clean up any values required.
+	 * @param Reason The cause of the Ship's death
+	 */
+	void Death (EDeathReason Reason);
 	
 	/**
 	 * @brief Returns the current fitness, ignoring any factors and assumes no death.
