@@ -6,23 +6,118 @@
 #include "Boids/HarvesterBoid.h"
 
 
-// Sets default values
-AHarvesterBoid::AHarvesterBoid()
-{
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-}
-
 // Called when the game starts or when spawned
 void AHarvesterBoid::BeginPlay()
 {
+	// Call the base begin play method
 	Super::BeginPlay();
-	
+
+	// Add in functionality for exiting gas clouds
+	BoidCollision->OnComponentEndOverlap.AddDynamic(this, &AHarvesterBoid::OnHitBoxOverlapEnd);
 }
+
+
+// Calculates the maximum speed of the BOID
+float AHarvesterBoid::GetMaxSpeed()
+{
+	// Returns a calculation based on the speed strength gene
+	return MaxSpeed + SpeedStrength / 5.0;
+}
+
 
 // Called every frame
 void AHarvesterBoid::Tick(float DeltaTime)
 {
+	// Call the base tick method
 	Super::Tick(DeltaTime);
+
+	// Check for gas cloud gold harvesting
+	if (CollisionCloud != nullptr)
+		GoldCollected += CollisionCloud->RemoveGold();
+}
+
+
+// Replaces the DNA with a new one from the population
+void AHarvesterBoid::ReplaceDNA()
+{
+	// Replace all the default values
+	Super::ReplaceDNA();
+
+	// Also replace the speed strength
+	SpeedStrength = ShipDNA.StrengthValues[5];
+
+	// Reset the current gold count
+	GoldCollected = 0.0;
+}
+
+
+// Calculates the new fitness value
+void AHarvesterBoid::CalculateAndStoreFitness(EDeathReason Reason)
+{
+	// Calculate the Time fitness factor (with a square that benefits those alive)
+	const float TimeValue = CurrentAliveTime;
+		
+	// Calculate the fitness using the weightings
+	float Fitness = (TimeValue * FitnessTimeWeighting) + (GoldCollected * FitnessGoldWeighting);
+
+	// Set a multiplier based on the reason
+	switch (Reason)
+	{
+	case NONE:
+		Fitness *= 1.0f; break;
+	case SHIP_COLLISION:
+		Fitness *= 0.25f; break;
+	case WALL_COLLISION:
+		Fitness *= 0.25f; break;
+	case PIRATE:
+		Fitness *= 0.50f; break;
+	}
+
+	// Update the stored fitness on the DNA
+	ShipDNA.StoredFitness = Fitness;
+	
+	// Calls the base function which will update the statistics
+	Super::CalculateAndStoreFitness(Reason);
+}
+
+
+// Updates the statistic information struct
+void AHarvesterBoid::UpdateStatistics()
+{
+	// Update the speed strength
+	ShipStatistics.StrengthSpeed = SpeedStrength;
+
+	// Update the gold value
+	ShipStatistics.Gold = GoldCollected;
+
+	// Update the base statistic information
+	// This is called after as the fitness is calculated
+	Super::UpdateStatistics();
+}
+
+
+// On collided with another trigger
+void AHarvesterBoid::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// Call the base event function call
+	Super::OnHitBoxOverlapBegin(OverlappedComponent, OtherActor, OtherComponent, OtherBodyIndex, bFromSweep, SweepResult);
+
+	// Attempt to get the cloud from the collision
+	AGasCloud* Cloud = Cast<AGasCloud>(OtherActor);
+	if (Cloud != nullptr)
+	{
+		CollisionCloud = Cloud;
+	}
+}
+
+
+// Called when the gas cloud overlaps the current actor
+void AHarvesterBoid::OnHitBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex)
+{
+	AGasCloud* cloud = Cast<AGasCloud>(OtherActor);
+	if (cloud != nullptr)
+		CollisionCloud = nullptr;
 }
 

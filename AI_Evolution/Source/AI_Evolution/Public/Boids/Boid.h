@@ -18,13 +18,23 @@
 class USphereComponent;
 class AShipSpawner;
 
+// The Golden Ratio is used for spawning in the sensors.
 #define GOLDEN_RATIO 1.6180339
 
 /**
  * @brief This class handles the Bird-like actors that are able to move
- * around the map with some functionality.
+ * around the map with some functionality. The BOIDs act as a species
+ * that are able to evolve. They can move around the map using a series
+ * of parameters, defined in their DNA. BOID's have three particular values:
+ *		- Velocity Matching (with nearby BOIDs)
+ *		- Separation (to nearby BOIDs)
+ *		- Centering (to nearby clusters of BOIDs)
+ * Additionally, these BOIDs may have a few other parameters based on the type
+ * of BOID they are, ensuring they don't collide with walls or are able to
+ * traverse the world for gas clouds, where they could collect gold or consume
+ * other BOIDs.
  */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS(BlueprintType)
 class AI_EVOLUTION_API ABoid : public AActor
 {
 	GENERATED_BODY()
@@ -40,10 +50,6 @@ class AI_EVOLUTION_API ABoid : public AActor
 
 	// The current DNA of the ship
 	DNA ShipDNA;
-	
-	// The cloud that the ship is correctly collided with
-	UPROPERTY()
-	AGasCloud* CollisionCloud;
 
 	// The ships velocity
 	FVector BoidVelocity;
@@ -85,9 +91,6 @@ class AI_EVOLUTION_API ABoid : public AActor
 	// The strength to apply when traversing gas clouds
 	float GasCloudStrength = 1.0f;
 
-	// The additional speed strength to add to maximum
-	float SpeedStrength = 1.0f;
-
 	
 
 	/*************************************************************/
@@ -104,14 +107,6 @@ class AI_EVOLUTION_API ABoid : public AActor
 	// The ship collision sensor
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent* PerceptionSensor;
-
-	// The factor to apply for the time alive on the fitness function
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float FitnessTimeWeighting = 0.5f;
-
-	// The factor to apply for the gold on the fitness function
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float FitnessGoldWeighting = 5.0f;
 	
 	// The maximum time being invincible
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -124,10 +119,6 @@ class AI_EVOLUTION_API ABoid : public AActor
 	// The current time alive
 	UPROPERTY(BlueprintReadOnly)
 	float CurrentAliveTime = 0.0;
-
-	// The number of gold collected so far
-	UPROPERTY(BlueprintReadOnly)
-	float GoldCollected = 0.0f;
 
 	// The reference to the current spawner of the ship
 	UPROPERTY()
@@ -147,17 +138,21 @@ class AI_EVOLUTION_API ABoid : public AActor
 	protected:
 	
 	/**
-	 * @brief Called when the game first starts executing
+	 * @brief Called when the game first starts executing. This will initialise
+	 * a first direction and set up any of the overlap condition functions to
+	 * be mapped to the correct event call.
 	 */
 	virtual void BeginPlay() override;
 
 	/**
-	 * @brief Updates the mesh to face in the direction of the current velocity
+	 * @brief Updates the mesh to face in the direction of the current velocity.
+	 * BOIDs only face in the direction they are moving, which is defined
+	 * as their velocity.
 	 */
 	void UpdateMeshRotation();
 
 	/**
-	 * @brief Attempts to avoid other ships nearby and returns a force vector
+	 * @brief Attempts to avoid other ships nearby and returns a force vector.
 	 * @param Flock The current array of ships
 	 * @return An additional force
 	 */
@@ -192,16 +187,29 @@ class AI_EVOLUTION_API ABoid : public AActor
 	FVector GasTargeting () const;
 	
 	/**
-	 * @brief Calculates a new flight path based on the force vectors
-	 * @param DeltaTime The time-step in seconds
+	 * @brief Calculates a new flight path based on the force vectors. It will
+	 * also multiply the strength values from the DNA to the current vector set
+	 * and will determine the final velocity of the flight path and move the
+	 * ship in the correct direction.
+	 * @param DeltaTime [s] The time-step of the tick.
 	 */
 	void FlightPath(float DeltaTime);
 
 	/**
-	 * @brief Attempts to determine if an obstacle is ahead
-	 * @return If an obstacle is ahead
+	 * @brief Attempts to determine if an obstacle is ahead by checking all
+	 * of the sensors and returns true if on exists. This only applies for
+	 * the walls surrounding the map.
+	 * @return If an obstacle is ahead.
 	 */
 	bool IsObstacleAhead();
+
+	/**
+	 * @brief This method returns the maximum speed that a BOID
+	 * can move at. This may adjust if there are additional values
+	 * that exist in the DNA to affect the maximum speed of a BOID.
+	 * @return [u/s] The maximum speed that a BOID can move at.
+	 */
+	virtual float GetMaxSpeed ();
 
 	/**
 	 * @brief This method is executed when the ship dies, for a particular reason
@@ -217,13 +225,20 @@ class AI_EVOLUTION_API ABoid : public AActor
 	public:
 	
 	/**
-	 * @brief The default constructor for the Boid class
+	 * @brief The default constructor for the Boid class. This sets up
+	 * all of the collision components and the sensor directions around
+	 * the BOID. It also initialises the invincibility parameter,
+	 * preventing a BOID from colliding in the first fraction of time
+	 * in the simulation, since the level may not yet be loaded correctly.
 	 */
 	ABoid();
 
 	/**
-	 * @brief Called every frame to update the actor
-	 * @param DeltaTime The time-step in seconds
+	 * @brief Called every frame to update the actor position and rotation.
+	 * A new calculation of the flight path will be created and the rotation
+	 * of the mesh will face the direction of travel. Additionally, the
+	 * current time will increase, storing how long it has been alive for.
+	 * @param DeltaTime [s] The time-step in of the tick
 	 */
 	virtual void Tick(float DeltaTime) override;
 
@@ -234,28 +249,36 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * that the Ship Spawners do not need to deal with setting the Ship's
 	 * own new DNA after an evolution has taken place.
 	 */
-	void ReplaceDNA ();
+	virtual void ReplaceDNA ();
 
 	/**
-	 * @brief Returns the Ship's current DNA
-	 * @return The DNA of the Ship
+	 * @brief Returns the Ship's current DNA, whether alive or dead, which
+	 * can be tracked by the evolve manager class.
+	 * @return The current DNA of the Ship.
 	 */
 	DNA GetDNA ();
 
 	/**
-	 * @brief Calculates a new fitness value and stores the fitness in the DNA
-	 * @param Reason The cause of the death
+	 * @brief Calculates a new fitness value from the world and stores
+	 * that value in the current DNA. The fitness calculation will be
+	 * different for each of the BOID types and the values may change.
+	 * Additionally, the cause of the death (if it did die) will alter
+	 * the final fitness value.
+	 * @param Reason The cause of the death.
 	 */
-	void CalculateAndStoreFitness (EDeathReason Reason);
+	virtual void CalculateAndStoreFitness (EDeathReason Reason);
 
 	/**
 	 * @brief Updates the statistics of the ship to the values
-	 * of the current ship's lifetime.
+	 * of the current ship's lifetime. These values are stored
+	 * and retrieved by the spawner to display on the UI.
 	 */
-	void UpdateStatistics ();
+	virtual void UpdateStatistics ();
 	
 	/**
-	 * @brief Called when the hit-box is overlapped
+	 * @brief Called when the hit-box is overlapped. This will handle killing
+	 * the BOID due to a collision, or potentially collecting gold if it is
+	 * a gas cloud that has been overlapped.
 	 * @param OverlappedComponent	The current overlapped component
 	 * @param OtherActor			The actor that is overlapping
 	 * @param OtherComponent		The other actor's component that is overlapping
@@ -264,23 +287,13 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * @param SweepResult			The hit result from the collision
 	 */
 	UFUNCTION()
-	void OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent,  AActor* OtherActor,
+	virtual void OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent,  AActor* OtherActor,
 		UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex,  bool bFromSweep, const FHitResult& SweepResult);
 	
 	/**
-	 * @brief Called when the hit-box overlapping is complete
-	 * @param OverlappedComponent	The current overlapped component
-	 * @param OtherActor			The actor that is overlapping
-	 * @param OtherComponent		The other actor's component that is overlapping
-	 * @param OtherBodyIndex		The other actor's body index overlapping
-	 */
-	UFUNCTION()
-	void OnHitboxOverlapEnd(UPrimitiveComponent* OverlappedComponent,  AActor* OtherActor,
-			UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex);
-	
-	/**
 	 * @brief Returns the current fitness, ignoring any factors and assumes no death.
-	 * @return The current fitness stored in the DNA
+	 * This fitness is retrieved from the current DNA present on the BOID.
+	 * @return The current fitness stored in the DNA.
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	float GetCurrentFitness ();

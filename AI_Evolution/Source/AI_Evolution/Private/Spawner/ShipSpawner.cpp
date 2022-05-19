@@ -118,7 +118,7 @@ void AShipSpawner::SpawnHarvester()
 	const FVector Location(XLoc, YLoc, ZLoc);
 
 	// Spawn the ship
-	ABoid* SpawnedShip = Cast<ABoid>(GetWorld()->SpawnActor(HarvestShip, &Location ,&FRotator::ZeroRotator));
+	AHarvesterBoid* SpawnedShip = Cast<AHarvesterBoid>(GetWorld()->SpawnActor(HarvestShip, &Location ,&FRotator::ZeroRotator));
 	SpawnedShip->Spawner = this;
 
 	// Updates the evolution manager associated with this ship

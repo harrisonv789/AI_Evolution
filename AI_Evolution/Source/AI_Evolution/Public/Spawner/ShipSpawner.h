@@ -7,6 +7,7 @@
 
 #include "CoreMinimal.h"
 #include "Boids/Boid.h"
+#include "Boids/HarvesterBoid.h"
 #include "Evolution/EvolutionManager.h"
 #include "Environment/GasCloud.h"
 #include "GameFramework/Actor.h"
@@ -57,7 +58,7 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 
 	// The type of ship to spawn in the world
 	UPROPERTY(EditAnywhere, Category = "Entities")
-	TSubclassOf<ABoid> HarvestShip;
+	TSubclassOf<AHarvesterBoid> HarvestShip;
 
 	// The maximum number of gas clouds to spawn into the world
 	UPROPERTY(EditAnywhere, Category = "Entities")

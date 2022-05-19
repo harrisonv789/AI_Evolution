@@ -9,7 +9,7 @@
 #include "DrawDebugHelpers.h"
 #include "Spawner/ShipSpawner.h"
 
-// Sets default values
+// Sets default values on constructor
 ABoid::ABoid()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -46,8 +46,6 @@ ABoid::ABoid()
 	// Empty sensor array
 	AvoidanceSensors.Empty();
 
-	// Theta angle of rotation on xy plane around z axis (yaw) around sphere
-
 	// Direction vector pointing from the center to point on sphere surface
 	FVector SensorDirection;
 
@@ -80,8 +78,7 @@ void ABoid::BeginPlay()
 	BoidVelocity *= FMath::FRandRange(MinSpeed, MaxSpeed);
 
 	// Add in the events for the overlap components
-	BoidCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoid::OnHitboxOverlapBegin);
-	BoidCollision->OnComponentEndOverlap.AddDynamic(this, &ABoid::OnHitboxOverlapEnd);
+	BoidCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoid::OnHitBoxOverlapBegin);
 	
 	// Set current mesh rotation
 	CurrentRotation = this->GetActorRotation();
@@ -99,10 +96,6 @@ void ABoid::Tick(float DeltaTime)
 	// Update ship mesh rotation
 	UpdateMeshRotation();
 
-	// If the current cloud is collided
-	if (CollisionCloud != nullptr)
-		GoldCollected += CollisionCloud->RemoveGold();
-
 	// If invincibility still exists
 	if (Invincibility > 0)
 		Invincibility -= DeltaTime;
@@ -113,6 +106,7 @@ void ABoid::Tick(float DeltaTime)
 }
 
 
+// Replaces the DNA with a new one from the population
 void ABoid::ReplaceDNA()
 {
 	// Sets the DNA to the new DNA
@@ -124,26 +118,23 @@ void ABoid::ReplaceDNA()
 	CenteringStrength = ShipDNA.StrengthValues[2];
 	AvoidanceStrength = ShipDNA.StrengthValues[3];
 	GasCloudStrength = ShipDNA.StrengthValues[4];
-	SpeedStrength = ShipDNA.StrengthValues[5];
 
 	// Reset the current alive time
 	CurrentAliveTime = 0.0;
-
-	// Reset the current gold
-	GoldCollected = 0.0;
 }
 
 
+// Retrieves the DNA
 DNA ABoid::GetDNA()
 {
 	return ShipDNA;
 }
 
 
+// Updates the statistic information struct
 void ABoid::UpdateStatistics()
 {
 	// Update the general information
-	ShipStatistics.Gold = GoldCollected;
 	ShipStatistics.TimeAlive = CurrentAliveTime;
 
 	// Update the strength values
@@ -151,7 +142,6 @@ void ABoid::UpdateStatistics()
 	ShipStatistics.StrengthAvoidance = AvoidanceStrength;
 	ShipStatistics.StrengthCentering = CenteringStrength;
 	ShipStatistics.StrengthSeparation = SeparationStrength;
-	ShipStatistics.StrengthSpeed = SpeedStrength;
 	ShipStatistics.StrengthGasCloud = GasCloudStrength;
 
 	// Calculate the fitness
@@ -162,6 +152,7 @@ void ABoid::UpdateStatistics()
 }
 
 
+// Updates the rotation to face the velocity
 void ABoid::UpdateMeshRotation()
 {
 	// Rotate toward current boid heading smoothly
@@ -170,6 +161,7 @@ void ABoid::UpdateMeshRotation()
 }
 
 
+// Create the flight path
 void ABoid::FlightPath(float DeltaTime)
 {
 	// Update the position and rotation from the previous frame
@@ -199,10 +191,11 @@ void ABoid::FlightPath(float DeltaTime)
 	BoidVelocity += Acceleration * DeltaTime;
 
 	// Clamp the velocity between some speeds
-	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, MaxSpeed + SpeedStrength / 5.0);
+	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, GetMaxSpeed());
 }
 
 
+// Avoids nearby ships
 FVector ABoid::AvoidShips(TArray<AActor*> NearbyShips)
 {
 	// Initialise the local variables for the tracking of nearby ships
@@ -255,6 +248,7 @@ FVector ABoid::AvoidShips(TArray<AActor*> NearbyShips)
 }
 
 
+// Matches the velocity of nearby ships
 FVector ABoid::VelocityMatching(TArray<AActor*> NearbyShips)
 {
 	// Initialise the variables
@@ -299,6 +293,7 @@ FVector ABoid::VelocityMatching(TArray<AActor*> NearbyShips)
 }
 
 
+// Moves to the center of the flock
 FVector ABoid::FlockCentering(TArray<AActor*> NearbyShips)
 {
 	int ShipCount = 0;
@@ -343,6 +338,7 @@ FVector ABoid::FlockCentering(TArray<AActor*> NearbyShips)
 }
 
 
+// Avoids obstacles
 FVector ABoid::AvoidObstacle()
 {
 	FVector Steering = FVector::ZeroVector;
@@ -377,6 +373,7 @@ FVector ABoid::AvoidObstacle()
 }
 
 
+// Targets the gas clouds
 FVector ABoid::GasTargeting() const
 {
 	// Apply Gas Cloud forces
@@ -439,31 +436,16 @@ bool ABoid::IsObstacleAhead()
 }
 
 
-// TODO Explain how fitness is calculated
+// Gets the maximum speed of the BOID
+float ABoid::GetMaxSpeed()
+{
+	return MaxSpeed;
+}
+
+
+// Calculates the new fitness value
 void ABoid::CalculateAndStoreFitness(EDeathReason Reason)
 {
-	// Calculate the Time fitness factor (with a square that benefits those alive)
-	const float TimeValue = CurrentAliveTime;
-		
-	// Calculate the fitness using the weightings
-	float Fitness = (TimeValue * FitnessTimeWeighting) + (GoldCollected * FitnessGoldWeighting);
-
-	// Set a multiplier based on the reason
-	switch (Reason)
-	{
-		case NONE:
-			Fitness *= 1.0f; break;
-		case SHIP_COLLISION:
-			Fitness *= 0.25f; break;
-		case WALL_COLLISION:
-			Fitness *= 0.25f; break;
-		case PIRATE:
-			Fitness *= 0.50f; break;
-	}
-
-	// Update the stored fitness on the DNA
-	ShipDNA.StoredFitness = Fitness;
-
 	// Update the statistics
 	UpdateStatistics();
 }
@@ -485,7 +467,8 @@ void ABoid::Death(EDeathReason Reason)
 }
 
 
-void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+// On collided with another trigger
+void ABoid::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if( OtherActor && OtherActor != this)
@@ -509,26 +492,8 @@ void ABoid::OnHitboxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 		{
 			// Call the death function
 			Death(WALL_COLLISION);
-			return;
 		}
-
-		// Attempt to 
-		AGasCloud* Cloud = Cast<AGasCloud>(OtherActor);
-		if (Cloud != nullptr)
-		{
-			CollisionCloud = Cloud;
-		}
-		
 	}
-}
-
-
-void ABoid::OnHitboxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex)
-{
-	AGasCloud* cloud = Cast<AGasCloud>(OtherActor);
-	if (cloud != nullptr)
-		CollisionCloud = nullptr;
 }
 
 
