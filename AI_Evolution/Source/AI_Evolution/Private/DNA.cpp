@@ -18,12 +18,12 @@ DNA::DNA(int DNASize)
 
 	// Initialises the DNA with some a random value for now
 	StrengthValues = {
-		FMath::RandRange(1.0f, 1000.0f),//100.0f,			// Velocity Strength
-		FMath::RandRange(1.0f, 1000.0f),//100.0f,			// Separation Strength
-		FMath::RandRange(1.0f, 1000.0f),//1.0f,				// Centering Strength
-		10000.0f,														// Avoidance Strength
-		FMath::RandRange(1.0f, 1000.0f),//1.0f,				// Gas Cloud Strength
-		FMath::RandRange(1.0f, 1000.0f),//5000.0f 			// Speed Strength
+		407.0f,			// Velocity Strength
+		162.0f,			// Separation Strength
+		0.7f,			// Centering Strength
+		894.0f,		// Avoidance Strength
+		62.0f,			// Gas Cloud Strength
+		1115.0f 			// Speed Strength
 	};
 }
 

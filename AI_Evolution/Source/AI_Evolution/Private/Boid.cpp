@@ -184,32 +184,22 @@ void ABoid::FlightPath(float DeltaTime)
 	PerceptionSensor->GetOverlappingActors(NearbyShips, TSubclassOf<ABoid>());
 
 	// Add in the three rules of Boids
-	Acceleration += AvoidShips(NearbyShips);
-	Acceleration += VelocityMatching(NearbyShips);
-	Acceleration += FlockCentering(NearbyShips);
+	Acceleration += AvoidShips(NearbyShips).GetSafeNormal() * SeparationStrength;;
+	Acceleration += VelocityMatching(NearbyShips).GetSafeNormal() * VelocityStrength;
+	Acceleration += FlockCentering(NearbyShips).GetSafeNormal() * CenteringStrength;
 
 	// If there are obstacles
 	if (IsObstacleAhead())
-		Acceleration += AvoidObstacle();
+		Acceleration += AvoidObstacle().GetSafeNormal() * AvoidanceStrength;
 
-	// Apply Gas Cloud forces
-	for (int i = 0; i < Spawner->GasClouds.Num(); i++)
-	{
-		// Determine the difference between the gas clouds and the location of the boid and add a force
-		// Only within a certain distance
-		FVector Force = Spawner->GasClouds[i]->GetActorLocation() - GetActorLocation();
-		if (Force.Size() < 1500)
-		{
-			// Adds the force to the acceleration of the clouds
-			Acceleration += Force.GetSafeNormal() * GasCloudStrength;
-		}
-	}
+	// Adds the force to the acceleration of the cloud targeting
+	Acceleration += GasTargeting().GetSafeNormal() * GasCloudStrength;
 
 	// Update the final velocity
 	BoidVelocity += Acceleration * DeltaTime;
 
 	// Clamp the velocity between some speeds
-	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, MaxSpeed + SpeedStrength);
+	BoidVelocity = BoidVelocity.GetClampedToSize(MinSpeed, MaxSpeed + SpeedStrength / 5.0);
 }
 
 
@@ -254,9 +244,9 @@ FVector ABoid::AvoidShips(TArray<AActor*> NearbyShips)
 	if (ShipCount > 0)
 	{
 		// Get the flock average separation force and apply a steering strength
-		Steering /= ShipCount;
-		Steering.GetSafeNormal() -= this->BoidVelocity.GetSafeNormal();
-		Steering *= SeparationStrength;
+		Steering /= static_cast<float>(ShipCount);
+		Steering = Steering.GetSafeNormal();
+		Steering -= this->BoidVelocity.GetSafeNormal();
 		return Steering;
 	}
 
@@ -298,9 +288,9 @@ FVector ABoid::VelocityMatching(TArray<AActor*> NearbyShips)
 	if (ShipCount > 0)
 	{
 		// Get the steering force as the average of the flocking direction
-		Steering /= ShipCount;
-		Steering.GetSafeNormal() -= this->BoidVelocity.GetSafeNormal();
-		Steering *= VelocityStrength;
+		Steering /= static_cast<float>(ShipCount);
+		Steering = Steering.GetSafeNormal();
+		Steering -= this->BoidVelocity.GetSafeNormal();
 		return Steering;
 	}
 
@@ -341,10 +331,10 @@ FVector ABoid::FlockCentering(TArray<AActor*> NearbyShips)
 	if (ShipCount > 0)
 	{
 		// Average Cohesion force of ships
-		AveragePosition /= ShipCount;
+		AveragePosition /= static_cast<float>(ShipCount);
 		FVector Steering = AveragePosition - this->GetActorLocation();
-		Steering.GetSafeNormal() -= this->BoidVelocity.GetSafeNormal();
-		Steering *= CenteringStrength;
+		Steering = Steering.GetSafeNormal();
+		Steering -= this->BoidVelocity.GetSafeNormal();
 		return Steering;
 	}
 
@@ -378,13 +368,32 @@ FVector ABoid::AvoidObstacle()
 		if (!Hit.bBlockingHit)
 		{
 			Steering = NewSensedDirection.GetSafeNormal() - this->BoidVelocity.GetSafeNormal();
-			Steering *= AvoidanceStrength;
 			return Steering;
 		}
 	}
 
 	// Return an empty vector otherwise
 	return FVector::ZeroVector;
+}
+
+
+FVector ABoid::GasTargeting() const
+{
+	// Apply Gas Cloud forces
+	FVector Steering;
+	for (int i = 0; i < Spawner->GasClouds.Num(); i++)
+	{
+		// Determine the difference between the gas clouds and the location of the boid and add a force
+		// Only within a certain distance
+		FVector Force = Spawner->GasClouds[i]->GetActorLocation() - GetActorLocation();
+		if (Force.Size() < 1500)
+		{
+			Steering += Force;
+		}
+	}
+
+	// Returns the steering vector
+	return Steering;
 }
 
 
@@ -430,7 +439,7 @@ bool ABoid::IsObstacleAhead()
 void ABoid::CalculateAndStoreFitness(EDeathReason Reason)
 {
 	// Calculate the Time fitness factor (with a square that benefits those alive)
-	const float TimeValue = CurrentAliveTime / MaxInvincibility;
+	const float TimeValue = CurrentAliveTime;
 		
 	// Calculate the fitness using the weightings
 	float Fitness = (TimeValue * FitnessTimeWeighting) + (GoldCollected * FitnessGoldWeighting);
@@ -438,14 +447,14 @@ void ABoid::CalculateAndStoreFitness(EDeathReason Reason)
 	// Set a multiplier based on the reason
 	switch (Reason)
 	{
-	case NONE:
-		Fitness *= 1.0f; break;
-	case SHIP_COLLISION:
-		Fitness *= 0.25f; break;
-	case WALL_COLLISION:
-		Fitness *= 0.25f; break;
-	case PIRATE:
-		Fitness *= 0.50f; break;
+		case NONE:
+			Fitness *= 1.0f; break;
+		case SHIP_COLLISION:
+			Fitness *= 0.25f; break;
+		case WALL_COLLISION:
+			Fitness *= 0.25f; break;
+		case PIRATE:
+			Fitness *= 0.50f; break;
 	}
 
 	// Update the stored fitness on the DNA

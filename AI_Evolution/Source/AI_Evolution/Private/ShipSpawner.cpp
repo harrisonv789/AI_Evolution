@@ -52,7 +52,7 @@ void AShipSpawner::Tick(float DeltaTime)
 	GenerationAliveTime += DeltaTime;
 
 	// If the number of ships is less than 20% of the maximum
-	if (NumOfShips < MaxShipCount * 0.2)
+	if (NumOfShips < MaxShipCount * SHIP_EVOLVE_CUTOFF)
 	{
 		// The current alive harvesters from the world
 		TArray<AActor*> AliveHarvesters;
@@ -93,7 +93,7 @@ void AShipSpawner::Tick(float DeltaTime)
 
 		// Add the median and best population fitness
 		GenerationBestFitness.Add(Population[0].StoredFitness);
-		GenerationMedianFitness.Add(Population[Population.Num() / 2].StoredFitness);
+		GenerationMedianFitness.Add(Population[MaxShipCount * SHIP_EVOLVE_CUTOFF].StoredFitness);
 
 		// Generate a new population with the child generation
 		GeneratePopulation(ChildGeneration());
@@ -162,6 +162,15 @@ void AShipSpawner::FindBestShipData()
 }
 
 
+// Currently, the rank algorithm is:
+// (20 - rank)^2,
+// where a good rank is 0 and a bad rank is 19
+int AShipSpawner::GetRankDuplication(int Rank, int MaxRank)
+{
+	return (MaxRank - Rank) * (MaxRank - Rank);
+}
+
+
 void AShipSpawner::GeneratePopulation(TArray<DNA> NewChildren)
 {
 	// Check if the number of children is empty
@@ -208,12 +217,12 @@ TArray<DNA> AShipSpawner::ChildGeneration()
 	// where the first rank has more in the array than the second and
 	// so on.
 	TArray<int> RankingIndex;
-	for (int i = 0; i < NUM_SELECTED_PARENTS; ++i)
-		for (int j = 0; j < NUM_SELECTED_PARENTS - i; ++j)
-			RankingIndex.Add(i);
+	for (int Rank = 0; Rank < NumSelectedParents; ++Rank)
+		for (int i = 0; i < GetRankDuplication(Rank, NumSelectedParents); ++i)
+			RankingIndex.Add(Rank);
 
 	// Loop through the number of children to evolve
-	for (int i = 0; i < NUM_EVOLVED_CHILDREN; ++i)
+	for (int i = 0; i < NumEvolvedChildren; ++i)
 	{
 		// Pick two random values for the ranking
 		const int RandomIndexA = RankingIndex[FMath::RandRange(0, RankingIndex.Num() - 1)];
@@ -227,7 +236,7 @@ TArray<DNA> AShipSpawner::ChildGeneration()
 		DNA Child = ParentA.Crossover(ParentB);
 
 		// Check if should mutate the child's genes
-		if (FMath::RandRange(0.0f, 1.0f) < MUTATION_CHANCE)
+		if (FMath::RandRange(0.0f, 1.0f) < MutationChance)
 		{
 			// Mutate the child
 			Child.Mutation();
@@ -239,69 +248,6 @@ TArray<DNA> AShipSpawner::ChildGeneration()
 
 	// Return the final list of children
 	return NewChildren;
-
-	/*
-	// Loop through the number of parents
-	for (int i = 0; i < NUM_PARENTS_PAIR * 2; ++i)
-	{
-		// Store the current Highest fitness and index
-		int TempHighestFitness = -1;
-		int DNAIndex = -1;
-
-		// Go through the population
-		for (int j = 0; j < Population.Num(); ++j)
-		{
-			if (Population[j].StoredFitness > TempHighestFitness)
-			{
-				TempHighestFitness = Population[j].StoredFitness;
-				DNAIndex = j;
-			}
-		}
-
-		// If a new higher DNA is found
-		if (DNAIndex >= 0)
-		{
-			// Found the highest fitness
-			Parents.Add(Population[DNAIndex]);
-
-			// Remove parents from population
-			Population.RemoveAt(DNAIndex);
-		}
-	}
-
-	// Create children array and set up to be added to population
-	TArray<DNA> NewChildren;
-
-	// Go through all the parents pairs
-	for (int i = 0; i < NUM_PARENTS_PAIR; ++i)
-	{
-		// Ensure this value exists
-		if (i * 2 + 1 >= NUM_PARENTS_PAIR)
-			continue;
-		
-		// Only cross over with the top parents
-		// This is Elitism
-		DNA ChildOne = Parents[i * 2 + 0].Crossover(Parents[1]);
-		DNA ChildTwo = Parents[i * 2 + 1].Crossover(Parents[0]);
-
-		// Mutate them
-		if (FMath::RandRange(0.0f, 1.0f) < MUTATION_CHANCE)
-		{
-			// Pick which child to mutate
-			if (FMath::RandBool())
-				ChildOne.Mutation();
-			else
-				ChildTwo.Mutation();
-		}
-
-		// Add the new children to the list
-		NewChildren.Add(ChildOne);
-		NewChildren.Add(ChildTwo);
-	}
-
-	// Return the children
-	return NewChildren;
-	*/
 }
 
 

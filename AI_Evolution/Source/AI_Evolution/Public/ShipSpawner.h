@@ -11,14 +11,13 @@
 #include "GameFramework/Actor.h"
 #include "ShipSpawner.generated.h"
 
-
 /**
  * @brief The default ship spawner class that handles spawning in ships
  * into the game world. This spawner class also handles the evolution of
  * ships in the world. It evolves the ships after a certain amount of
  * ships are killed.
  */
-UCLASS()
+UCLASS(Blueprintable)
 class AI_EVOLUTION_API AShipSpawner : public AActor
 {
 	GENERATED_BODY()
@@ -26,14 +25,21 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	/*************************************************************/
 	private:
 
+	// The factor to cut off the current population and re-evolve
+	static constexpr float SHIP_EVOLVE_CUTOFF = 0.2f;
+
 	// The number of selected DNA for evolving
-	static constexpr int NUM_SELECTED_PARENTS = 20;
+	UPROPERTY(EditAnywhere, Category = "Entities")
+	int NumSelectedParents = 20;
 	
 	// The number of children to evolve based on parental genes
-	static constexpr int NUM_EVOLVED_CHILDREN = 250;
+	// The remainder have random gene values
+	UPROPERTY(EditAnywhere, Category = "Entities")
+	int NumEvolvedChildren = 300;
 
 	// The chance for mutation
-	static constexpr float MUTATION_CHANCE = 0.5;
+	UPROPERTY(EditAnywhere, Category = "Entities")
+	float MutationChance = 0.9f;
 
 	// The current time the generation has been alive for
 	float GenerationAliveTime = 0;
@@ -121,6 +127,19 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	 * on the screen to help debug issues.
 	 */
 	void FindBestShipData();
+
+	/**
+	 * @brief When determining the rank selection of the parents, the best
+	 * fitness species should have a higher chance of replicating than the
+	 * remainder. As such, this function determines how many times a particular
+	 * rank should appear in the selection array based on the rank number, where
+	 * 0 is the best and MaxRank is the 'worst' (but still in the top of the
+	 * fitness values selected).
+	 * @param Rank The rank to generate
+	 * @param MaxRank The maximum rank of the list
+	 * @return The number of times the rank should exist in the list
+	 */
+	static int GetRankDuplication (int Rank, int MaxRank);
 
 	/**
 	 * @brief Generates a new population of Ships

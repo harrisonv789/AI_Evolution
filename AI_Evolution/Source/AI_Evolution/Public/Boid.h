@@ -23,7 +23,7 @@ class AShipSpawner;
  * @brief This class handles the Bird-like actors that are able to move
  * around the map with some functionality.
  */
-UCLASS()
+UCLASS(Blueprintable, BlueprintType)
 class AI_EVOLUTION_API ABoid : public AActor
 {
 	GENERATED_BODY()
@@ -105,15 +105,15 @@ class AI_EVOLUTION_API ABoid : public AActor
 	USphereComponent* PerceptionSensor;
 
 	// The factor to apply for the time alive on the fitness function
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	float FitnessTimeWeighting = 1.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float FitnessTimeWeighting = 0.5f;
 
 	// The factor to apply for the gold on the fitness function
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	float FitnessGoldWeighting = 20.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float FitnessGoldWeighting = 5.0f;
 	
 	// The maximum time being invincible
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MaxInvincibility = 0.1;
 
 	// The current time being invincible
@@ -177,6 +177,14 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * @return An additional force
 	 */
 	FVector AvoidObstacle();
+
+	/**
+	 * @brief Attempts to target the nearest gas clouds on the ship's quest to get gold.
+	 * This adds up all forces of nearby gas clouds and attempts to move towards a
+	 * specific one.
+	 * @return An additional force
+	 */
+	FVector GasTargeting () const;
 	
 	/**
 	 * @brief Calculates a new flight path based on the force vectors

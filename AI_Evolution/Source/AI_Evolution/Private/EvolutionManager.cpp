@@ -3,7 +3,4 @@
  * Author: Harrison Verrios
  */
 
-#pragma once
-
-#include "CoreMinimal.h"
-
+#include "EvolutionManager.h"
