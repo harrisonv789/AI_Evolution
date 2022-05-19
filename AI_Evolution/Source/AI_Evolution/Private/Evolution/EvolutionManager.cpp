@@ -3,7 +3,7 @@
  * Author: Harrison Verrios
  */
 
-#include "EvolutionManager.h"
+#include "Evolution/EvolutionManager.h"
 
 // Currently, the rank algorithm is:
 // (20 - rank)^2,

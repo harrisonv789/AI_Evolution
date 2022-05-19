@@ -3,8 +3,7 @@
  * Author: Harrison Verrios
  */
 
-#include "GasCloud.h"
-
+#include "Environment/GasCloud.h"
 #include "Niagara/Public/NiagaraFunctionLibrary.h"
 
 // Sets default values

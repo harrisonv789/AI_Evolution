@@ -3,25 +3,25 @@
  * Author: Harrison Verrios
  */
 
-#include "PirateBoid.h"
+#include "Boids/HarvesterBoid.h"
 
 
 // Sets default values
-APirateBoid::APirateBoid()
+AHarvesterBoid::AHarvesterBoid()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 }
 
 // Called when the game starts or when spawned
-void APirateBoid::BeginPlay()
+void AHarvesterBoid::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
 // Called every frame
-void APirateBoid::Tick(float DeltaTime)
+void AHarvesterBoid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }

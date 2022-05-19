@@ -6,9 +6,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Boid.h"
-#include "EvolutionManager.h"
-#include "GasCloud.h"
+#include "Boids/Boid.h"
+#include "Evolution/EvolutionManager.h"
+#include "Environment/GasCloud.h"
 #include "GameFramework/Actor.h"
 #include "ShipSpawner.generated.h"
 

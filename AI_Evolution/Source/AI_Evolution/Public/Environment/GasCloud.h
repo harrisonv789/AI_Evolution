@@ -7,8 +7,8 @@
 
 #include "CoreMinimal.h"
 #include "NiagaraComponent.h"
-#include "Components/SphereComponent.h"
 #include "GameFramework/Actor.h"
+#include "Components/SphereComponent.h"
 #include "GasCloud.generated.h"
 
 /**
@@ -59,8 +59,9 @@ class AI_EVOLUTION_API AGasCloud : public AActor
 	virtual void Tick(float DeltaTime) override;
 	
 	/**
-	 * @brief Removes gold from the cloud and returns the current gold value
-	 * @return The value of the gold
+	 * @brief Removes gold from the cloud and returns the current gold value.
+	 * This is executed by a Boid that attempts to collect the gold.
+	 * @return The value of the gold collected by the ship.
 	 */
 	UFUNCTION(BlueprintCallable)
 	float RemoveGold();

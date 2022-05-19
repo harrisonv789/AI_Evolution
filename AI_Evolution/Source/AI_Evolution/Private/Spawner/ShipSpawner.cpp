@@ -3,7 +3,7 @@
  * Author: Harrison Verrios
  */
 
-#include "ShipSpawner.h"
+#include "Spawner/ShipSpawner.h"
 
 #include "Kismet/GameplayStatics.h"
 

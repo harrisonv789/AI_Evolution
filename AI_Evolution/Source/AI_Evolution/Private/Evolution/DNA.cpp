@@ -3,7 +3,7 @@
  * Author: Harrison Verrios
  */
 
-#include "DNA.h"
+#include "Evolution/DNA.h"
 
 DNA::DNA()
 {

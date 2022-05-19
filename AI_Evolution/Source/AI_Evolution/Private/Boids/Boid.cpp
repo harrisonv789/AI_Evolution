@@ -3,11 +3,11 @@
  * Author: Harrison Verrios
  */
 
-#include "Boid.h"
+#include "Boids/Boid.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "DrawDebugHelpers.h"
-#include "ShipSpawner.h"
+#include "Spawner/ShipSpawner.h"
 
 // Sets default values
 ABoid::ABoid()

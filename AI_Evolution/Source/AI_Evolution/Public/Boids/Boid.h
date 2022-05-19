@@ -6,11 +6,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DeathReason.h"
-#include "DNA.h"
-#include "EvolutionManager.h"
-#include "GasCloud.h"
-#include "ShipDataContainer.h"
+#include "Data/DeathReason.h"
+#include "Evolution/DNA.h"
+#include "Evolution/EvolutionManager.h"
+#include "Environment/GasCloud.h"
+#include "Data/ShipDataContainer.h"
 #include "GameFramework/Actor.h"
 #include "Boid.generated.h"
 
