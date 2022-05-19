@@ -38,7 +38,7 @@ class AI_EVOLUTION_API APirateBoid : public ABoid
 
 	/**
 	 * @brief Called every frame to update the BOID's position
-	 * @param DeltaTime The time-step between frames
+	 * @param DeltaTime [s] The time-step between frames
 	 */
 	virtual void Tick(float DeltaTime) override;
 

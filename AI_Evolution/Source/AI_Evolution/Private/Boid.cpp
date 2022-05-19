@@ -113,10 +113,10 @@ void ABoid::Tick(float DeltaTime)
 }
 
 
-void ABoid::SetDNA(DNA NewDNA)
+void ABoid::ReplaceDNA()
 {
 	// Sets the DNA to the new DNA
-	ShipDNA = NewDNA;
+	ShipDNA = EvolutionManager->RetrieveDNA();
 
 	// Update the strengths from the DNA
 	VelocityStrength = ShipDNA.StrengthValues[0];
@@ -381,11 +381,15 @@ FVector ABoid::GasTargeting() const
 {
 	// Apply Gas Cloud forces
 	FVector Steering;
-	for (int i = 0; i < Spawner->GasClouds.Num(); i++)
+
+	// Get the gas clouds present
+	const TArray<AGasCloud*> GasClouds = Spawner->GetGasClouds();
+	
+	for (int i = 0; i < GasClouds.Num(); i++)
 	{
-		// Determine the difference between the gas clouds and the location of the boid and add a force
-		// Only within a certain distance
-		FVector Force = Spawner->GasClouds[i]->GetActorLocation() - GetActorLocation();
+		// Determine the difference between the gas clouds and the location of the boid and add a force.
+		// Only within a certain distance from the cloud.
+		FVector Force = GasClouds[i]->GetActorLocation() - GetActorLocation();
 		if (Force.Size() < 1500)
 		{
 			Steering += Force;
@@ -469,6 +473,9 @@ void ABoid::Death(EDeathReason Reason)
 {
 	// Recalculates the fitness
 	CalculateAndStoreFitness(Reason);
+
+	// Add this DNA to the dead DNA list
+	EvolutionManager->AddDeadDNA(GetDNA());
 
 	// Remove the Ship from the spawner
 	Spawner->RemoveShip(this);

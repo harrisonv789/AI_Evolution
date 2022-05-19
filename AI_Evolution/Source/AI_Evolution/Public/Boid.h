@@ -8,6 +8,7 @@
 #include "CoreMinimal.h"
 #include "DeathReason.h"
 #include "DNA.h"
+#include "EvolutionManager.h"
 #include "GasCloud.h"
 #include "ShipDataContainer.h"
 #include "GameFramework/Actor.h"
@@ -136,6 +137,10 @@ class AI_EVOLUTION_API ABoid : public AActor
 	UPROPERTY(VisibleAnywhere)
 	FShipDataContainer ShipStatistics;
 
+	// The current evolution manager associated with this ship.
+	UPROPERTY()
+	UEvolutionManager* EvolutionManager;
+
 	
 
 	/*************************************************************/
@@ -223,10 +228,13 @@ class AI_EVOLUTION_API ABoid : public AActor
 	virtual void Tick(float DeltaTime) override;
 
 	/**
-	 * @brief Sets the current DNA properties
-	 * @param NewDNA The new DNA to update to
+	 * @brief Sets the current DNA properties to a new DNA from the
+	 * Evolution Manager of the ship. It takes the top one from the
+	 * list and updates it's current DNA to that element. This ensures
+	 * that the Ship Spawners do not need to deal with setting the Ship's
+	 * own new DNA after an evolution has taken place.
 	 */
-	void SetDNA (DNA NewDNA);
+	void ReplaceDNA ();
 
 	/**
 	 * @brief Returns the Ship's current DNA

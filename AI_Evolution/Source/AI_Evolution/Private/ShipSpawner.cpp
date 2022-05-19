@@ -20,13 +20,16 @@ void AShipSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Generate the Populations
-	GeneratePopulation();
+	// Create the evolution managers for each of the species
+	HarvesterEvolution = NewObject<UEvolutionManager>(this);
+
+	// Initialise all of the evolution managers
+	HarvesterEvolution->Initialize(6, MaxShipCount, 20);
 
 	// Spawn the initial ships
 	for(int i = 0; i < MaxShipCount; i++)
 	{
-		SpawnShip();
+		SpawnHarvester();
 	}
 
 	// Spawn the gas cloud count
@@ -59,7 +62,7 @@ void AShipSpawner::Tick(float DeltaTime)
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABoid::StaticClass(), AliveHarvesters);
 		
 		// Clear the population of DNA
-		Population.Empty();
+		TArray<DNA> AlivePopulation;
 
 		// Loop through all the alive harvesters
 		for (const auto Ship : AliveHarvesters)
@@ -71,52 +74,44 @@ void AShipSpawner::Tick(float DeltaTime)
 			Boid->CalculateAndStoreFitness(NONE);
 
 			// Get the current population DNA
-			Population.Add(Boid->GetDNA());
+			AlivePopulation.Add(Boid->GetDNA());
 		}
 
 		// Find the current best ship of the previous generation 
 		FindBestShipData();
 
-		// Add the Dead DNA to the population
-		Population.Append(DeadDNA);
-		DeadDNA.Empty();
+		// Reset the population
+		HarvesterEvolution->GenerationEnd(GenerationAliveTime, AlivePopulation);
+		
+		// Reset the current generation time
+		GenerationAliveTime = 0.0;
 
 		// Clear the dead statistics
 		DeadStatistics.Empty();
 
-		// Add the time to the generation and reset
-		GenerationDeathTimes.Add(GenerationAliveTime);
-		GenerationAliveTime = 0.0;
-
-		// Sort the population based on fitness
-		Population.Sort(&SortFitness);
-
-		// Add the median and best population fitness
-		GenerationBestFitness.Add(Population[0].StoredFitness);
-		GenerationMedianFitness.Add(Population[MaxShipCount * SHIP_EVOLVE_CUTOFF].StoredFitness);
-
-		// Generate a new population with the child generation
-		GeneratePopulation(ChildGeneration());
+		// Evolve the population
+		HarvesterEvolution->Evolve();
 
 		// Loop through all the alive harvesters
 		for (const auto Ship : AliveHarvesters)
 		{
 			// Updates the DNA to the current population
-			SetShipVariables(Cast<ABoid>(Ship));
+			Cast<ABoid>(Ship)->ReplaceDNA();
 		}
 	
 		// Spawn more ships
 		while (NumOfShips < MaxShipCount)
 		{
-			SpawnShip();
+			SpawnHarvester();
 		}
 	}
 }
 
 
-void AShipSpawner::SpawnShip()
+// Spawns a new harvester ship into the world
+void AShipSpawner::SpawnHarvester()
 {
-	// Randomise the location of the spawn
+	// Randomise the location of the ship to spawn
 	const float XLoc = FMath::RandRange(-2000.0f, 2000.0f);
 	const float YLoc = FMath::RandRange(-2000.0f, 2000.0f);
 	const float ZLoc = FMath::RandRange(500.0f, 4500.0f);
@@ -125,14 +120,22 @@ void AShipSpawner::SpawnShip()
 	// Spawn the ship
 	ABoid* SpawnedShip = Cast<ABoid>(GetWorld()->SpawnActor(HarvestShip, &Location ,&FRotator::ZeroRotator));
 	SpawnedShip->Spawner = this;
+
+	// Updates the evolution manager associated with this ship
+	SpawnedShip->EvolutionManager = HarvesterEvolution;
+
+	// Adds the ship to the list of alive ships
 	AliveShips.Add(SpawnedShip);
 
-	// Update the variables
-	SetShipVariables(SpawnedShip);
+	// Update the DNA of the Ship to a new one from the evolution
+	SpawnedShip->ReplaceDNA();
+
+	// Update the number of ships that exist
 	NumOfShips++;
 }
 
 
+// Determines the best ship in the system
 void AShipSpawner::FindBestShipData()
 {
 	// The best ship's fitness score
@@ -162,113 +165,6 @@ void AShipSpawner::FindBestShipData()
 }
 
 
-// Currently, the rank algorithm is:
-// (20 - rank)^2,
-// where a good rank is 0 and a bad rank is 19
-int AShipSpawner::GetRankDuplication(int Rank, int MaxRank)
-{
-	return (MaxRank - Rank) * (MaxRank - Rank);
-}
-
-
-void AShipSpawner::GeneratePopulation(TArray<DNA> NewChildren)
-{
-	// Check if the number of children is empty
-	if (NewChildren.Num() == 0)
-	{
-		// Adds in a new DNA strand
-		for (int i = 0; i < MaxShipCount; ++i)
-			Population.Add(DNA(6));
-	}
-
-	// Otherwise, reset the population
-	else
-	{
-		Population.Empty();
-		Population.Append(NewChildren);
-
-		// Create the remainder of the DNA
-		for (int i = 0; i < MaxShipCount - NewChildren.Num(); ++i)
-		{
-			Population.Add(DNA(6));
-		}
-	}
-
-	// Increase the number of generations
-	NumGenerations++;
-}
-
-
-bool AShipSpawner::SortFitness (DNA A, DNA B)
-{
-	return (A.StoredFitness > B.StoredFitness);
-}
-
-
-TArray<DNA> AShipSpawner::ChildGeneration()
-{
-	// Get a list of children to output
-	TArray<DNA> NewChildren;
-
-	// ASSUME THAT THE POPULATION HAS ALREADY BEEN SORTED BY FITNESS
-	// THIS IS DONE IN THE TICK FUNCTION
-
-	// Create an array that lists all the indexes of the selected DNA,
-	// where the first rank has more in the array than the second and
-	// so on.
-	TArray<int> RankingIndex;
-	for (int Rank = 0; Rank < NumSelectedParents; ++Rank)
-		for (int i = 0; i < GetRankDuplication(Rank, NumSelectedParents); ++i)
-			RankingIndex.Add(Rank);
-
-	// Loop through the number of children to evolve
-	for (int i = 0; i < NumEvolvedChildren; ++i)
-	{
-		// Pick two random values for the ranking
-		const int RandomIndexA = RankingIndex[FMath::RandRange(0, RankingIndex.Num() - 1)];
-		const int RandomIndexB = RankingIndex[FMath::RandRange(0, RankingIndex.Num() - 1)];
-
-		// Find two parents based on these indexes
-		DNA ParentA = Population[RandomIndexA];
-		DNA ParentB = Population[RandomIndexB];
-
-		// Create a child
-		DNA Child = ParentA.Crossover(ParentB);
-
-		// Check if should mutate the child's genes
-		if (FMath::RandRange(0.0f, 1.0f) < MutationChance)
-		{
-			// Mutate the child
-			Child.Mutation();
-		}
-
-		// Adds the child to the list
-		NewChildren.Add(Child);
-	}
-
-	// Return the final list of children
-	return NewChildren;
-}
-
-
-void AShipSpawner::SetShipVariables(ABoid* Ship)
-{
-	// If the population exists
-	if (Population.Num() > 0)
-	{
-		// Update the ship's DNA
-		Ship->SetDNA(Population[0]);
-		Population.RemoveAt(0);
-	}
-
-	// If there is not enough DNA, create a new one
-	else
-	{
-		Ship->SetDNA(DNA(6));
-	}
-}
-
-
 void AShipSpawner::RemoveShip(ABoid* Ship)
 {
 	// Subtract the number of ships
@@ -276,10 +172,13 @@ void AShipSpawner::RemoveShip(ABoid* Ship)
 
 	// Add the ship's statistics
 	DeadStatistics.Add(Ship->ShipStatistics);
-				
-	// Add the current ships' DNA to the dead DNA 
-	DeadDNA.Add(Ship->GetDNA());
 	
 	// Removes this ship from the list
 	AliveShips.Remove(Ship);
+}
+
+
+TArray<AGasCloud*> AShipSpawner::GetGasClouds()
+{
+	return GasClouds;
 }
