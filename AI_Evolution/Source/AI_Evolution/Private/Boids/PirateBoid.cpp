@@ -6,7 +6,6 @@
 #include "Boids/PirateBoid.h"
 #include "Boids/HarvesterBoid.h"
 
-
 // Sets default values
 APirateBoid::APirateBoid()
 {
@@ -38,6 +37,45 @@ float APirateBoid::GetMaxSpeed()
 }
 
 
+// Calculates the new fitness value
+void APirateBoid::CalculateAndStoreFitness(EDeathReason Reason)
+{
+	// Sets the fitness as the gold collected
+	float Fitness = GoldCollected;
+	
+	// Set a multiplier based on the reason
+	switch (Reason)
+	{
+		case NONE:
+			Fitness *= 1.0f; break;
+		case SHIP_COLLISION: // This should never occur
+			Fitness *= 1.0; break;
+		case WALL_COLLISION:
+			Fitness *= 0.25f; break;
+		case PIRATE:
+			Fitness *= 0.50f; break;
+	}
+	
+	// Update the DNA fitness
+	ShipDNA.StoredFitness = Fitness;
+	
+	// Calls the base function
+	Super::CalculateAndStoreFitness(Reason);
+}
+
+
+// Updates the statistic information struct
+void APirateBoid::UpdateStatistics()
+{
+	// Ensure it sets this as a pirate
+	ShipStatistics.IsPirate = true;
+
+	// Update the base statistic information
+	// This is called after as the fitness is calculated
+	Super::UpdateStatistics();
+}
+
+
 // Called every frame
 void APirateBoid::Tick(float DeltaTime)
 {
@@ -47,6 +85,13 @@ void APirateBoid::Tick(float DeltaTime)
 	// Decrease the wait time if waiting
 	if (CurrentWaitTime > 0.0)
 		CurrentWaitTime -= DeltaTime;
+}
+
+
+// Sets the DNA to something else
+void APirateBoid::SetDNA(DNA Other)
+{
+	ShipDNA = Other;
 }
 
 
@@ -89,5 +134,21 @@ void APirateBoid::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent,
 			}
 		}
 	}
+}
+
+
+// Gets the list of defaults
+void APirateBoid::SetDefaultGenes()
+{
+	ShipDNA.SetDefault( {
+		100.0f,			// Velocity Alignment
+		100.0f,			// Separation
+		10.0f,			// Centering
+		1000.0f,		// Avoidance
+		200.0f,			// Gas Cloud
+	});
+
+	// Call the base function
+	Super::SetDefaultGenes();
 }
 

@@ -107,10 +107,10 @@ void ABoid::Tick(float DeltaTime)
 
 
 // Replaces the DNA with a new one from the population
-void ABoid::ReplaceDNA()
+void ABoid::ReplaceDNA(bool RetrieveNew)
 {
-	// Sets the DNA to the new DNA
-	ShipDNA = EvolutionManager->RetrieveDNA();
+	// Sets the DNA to the new DNA if required
+	if (RetrieveNew) ShipDNA = EvolutionManager->RetrieveDNA();
 
 	// Update the strengths from the DNA
 	VelocityStrength = ShipDNA.StrengthValues[0];
@@ -471,13 +471,15 @@ void ABoid::CalculateAndStoreFitness(EDeathReason Reason)
 }
 
 
+// Called on death
 void ABoid::Death(EDeathReason Reason)
 {
 	// Recalculates the fitness
 	CalculateAndStoreFitness(Reason);
 
 	// Add this DNA to the dead DNA list
-	EvolutionManager->AddDeadDNA(GetDNA());
+	if (!ShipStatistics.IsPirate)
+		EvolutionManager->AddDeadDNA(GetDNA());
 
 	// Remove the Ship from the spawner
 	Spawner->RemoveShip(this);
@@ -505,7 +507,16 @@ void ABoid::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 }
 
 
+// Gets the current fitness
 float ABoid::GetCurrentFitness()
 {
 	return GetDNA().StoredFitness;
+}
+
+
+// Gets the default values
+void ABoid::SetDefaultGenes()
+{
+	// Update the information without retrieving a new DNA
+	ReplaceDNA(false);
 }

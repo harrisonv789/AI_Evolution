@@ -260,8 +260,9 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * list and updates it's current DNA to that element. This ensures
 	 * that the Ship Spawners do not need to deal with setting the Ship's
 	 * own new DNA after an evolution has taken place.
+	 * @param RetrieveNew A flag for if retrieving a new DNA from the evolve manager.
 	 */
-	virtual void ReplaceDNA ();
+	virtual void ReplaceDNA (bool RetrieveNew = true);
 
 	/**
 	 * @brief Returns the Ship's current DNA, whether alive or dead, which
@@ -317,5 +318,13 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	float GetCurrentFitness ();
+
+	/**
+	 * @brief This function will set a series of default values to set the
+	 * genes to. This will be called when the simulation first starts, and will
+	 * initialise the DNA with a series of default values. The length of these
+	 * strengths must be the same as the length of the genotype.
+	 */
+	virtual void SetDefaultGenes ();
 	
 };

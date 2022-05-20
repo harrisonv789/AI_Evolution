@@ -25,11 +25,11 @@ class UEvolutionManager : public UObject
 
 	// The fraction of children that are not evolved from parents. These
 	//		will have random gene values.
-	static constexpr float FRACTION_RANDOM_CHILDREN = 0.9f;
+	static constexpr float FRACTION_RANDOM_CHILDREN = 0.95f;
 
 	// The chance that a new child will have a mutation in at least one of
 	//		their genes.
-	static constexpr float MUTATION_CHANCE = 0.9f;
+	static constexpr float MUTATION_CHANCE = 0.7f;
 
 
 	/*************************************************************/

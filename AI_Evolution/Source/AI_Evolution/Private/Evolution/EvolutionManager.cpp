@@ -39,7 +39,7 @@ void UEvolutionManager::GeneratePopulation(TArray<DNA> Children)
 		Population.Append(Children);
 
 		// Create the remainder of the DNA
-		for (int i = 0; i <  - Children.Num(); ++i)
+		for (int i = 0; i < NumPopulation - Children.Num(); ++i)
 		{
 			Population.Add(DNA(NumGenes));
 		}
@@ -87,6 +87,21 @@ TArray<DNA> UEvolutionManager::CreateChildGeneration()
 
 		// Adds the child to the list
 		NewChildren.Add(Child);
+	}
+
+	// Create a series of random DNA to add
+	for (int i = 0; i < (1.0 - FRACTION_RANDOM_CHILDREN) * NumPopulation; ++i)
+	{
+		// Make sure the number does not overlap the maximum
+		if (NewChildren.Num() < NumPopulation)
+		{
+			// Create a new random child
+			DNA Child = DNA(NumGenes);
+			Child.Randomise();
+
+			// Add the child to the list
+			NewChildren.Add(Child);
+		}
 	}
 
 	// Return the final list of children
@@ -138,7 +153,7 @@ DNA UEvolutionManager::RetrieveDNA()
 
 	// If there were no DNA remaining, create a new one.
 	// This should in theory never happen if coded correctly.
-	UE_LOG(LogTemp, Error, TEXT("Unable to find any more DNA when Retrieving DNA."));
+	UE_LOG(LogTemp, Error, TEXT("Unable to find any more DNA when Retrieving DNA. %d"), NumGenes);
 	return DNA(NumGenes);
 }
 
@@ -159,7 +174,8 @@ void UEvolutionManager::GenerationEnd(float Time, TArray<DNA> AlivePopulation)
 	Population.Append(AlivePopulation);
 
 	// Add the Dead DNA to the list of population
-	Population.Append(DeadDNA);
+	if (AlivePopulation.Num() < NumPopulation)
+		Population.Append(DeadDNA);
 
 	// Empty the current Dead DNA list
 	DeadDNA.Empty();

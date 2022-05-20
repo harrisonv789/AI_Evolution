@@ -83,8 +83,9 @@ class AI_EVOLUTION_API AHarvesterBoid : public ABoid
 	 * @brief Replaces the current DNA with a new one from the evolved DNA.
 	 * Additionally, this will replace the speed strength that exists in the
 	 * harvester ship and updates its own strength values.
+	 * @param RetrieveNew A flag for if retrieving a new DNA from the evolve manager.
 	 */
-	virtual void ReplaceDNA() override;
+	virtual void ReplaceDNA(bool RetrieveNew = true) override;
 
 	/**
 	 * @brief Calculates a new fitness score based on the current parameters
@@ -130,4 +131,12 @@ class AI_EVOLUTION_API AHarvesterBoid : public ABoid
 	UFUNCTION()
 	void OnHitBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent,  AActor* OtherActor,
 			UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex);
+
+	/**
+	 * @brief Sets the list of defaults for the Harvester BOID. This will be set
+	 * based on simulated evolutionary values and will be found after trial and error
+	 * of running the simulation for a long enough time such that the system correctly
+	 * evolves.
+	 */
+	virtual void SetDefaultGenes() override;
 };

@@ -55,6 +55,7 @@ void AGasCloud::Tick(float DeltaTime)
 }
 
 
+// Removes gold and returns the gold removed
 float AGasCloud::RemoveGold()
 {
 	if(GoldStorage > 0)

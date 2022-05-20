@@ -58,4 +58,8 @@ struct FShipDataContainer
 	// The property of the speed strength from the gene
 	UPROPERTY(BlueprintReadOnly)
 	float StrengthSpeed;
+
+	// Whether or not the current ship is a pirate or not
+	UPROPERTY(BlueprintReadOnly)
+	bool IsPirate;
 };

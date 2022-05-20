@@ -13,7 +13,8 @@
 
 /**
  * @brief The class that handles the cloud of gas that stores some gold
- * within the cloud.
+ * within the cloud. Clouds that are interacted with BOIDs may be able
+ * to transfer gold to the BOIDs for collection.
  */
 UCLASS()
 class AI_EVOLUTION_API AGasCloud : public AActor
@@ -39,7 +40,8 @@ class AI_EVOLUTION_API AGasCloud : public AActor
 	protected:
 	
 	/**
-	 * @brief Called when the actor first starts playing
+	 * @brief Called when the actor first starts playing. This should
+	 * start the Niagara particle effects.
 	 */
 	virtual void BeginPlay() override;
 
@@ -48,13 +50,17 @@ class AI_EVOLUTION_API AGasCloud : public AActor
 	public:
 	
 	/**
-	 * @brief Default constructor initialises the default values
+	 * @brief Default constructor initialises the default values. This
+	 * will also create any necessary physics components and particle
+	 * effects that may be run to create a nice feel of the cloud.
 	 */
 	AGasCloud();
 
 	/**
-	 * @brief Called every time the game updates
-	 * @param DeltaTime The time-step in seconds
+	 * @brief Called every time the game updates. This will check to see
+	 * if the gas cloud has run out of gold. If so, it will move the gas
+	 * cloud to a new location somewhere in the map.
+	 * @param DeltaTime [s] The time-step from the tick.
 	 */
 	virtual void Tick(float DeltaTime) override;
 	

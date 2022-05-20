@@ -4,7 +4,6 @@
  */
 
 #include "Spawner/ShipSpawner.h"
-
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -22,15 +21,17 @@ void AShipSpawner::BeginPlay()
 
 	// Create the evolution managers for each of the species
 	HarvesterEvolution = NewObject<UEvolutionManager>(this);
+	PirateEvolution = NewObject<UEvolutionManager>(this);
 
 	// Initialise all of the evolution managers
-	HarvesterEvolution->Initialize(6, MaxShipCount, 20);
+	HarvesterEvolution->Initialize(6, MaxHarvesterCount, 30);
+	PirateEvolution->Initialize(5, MaxPirateCount, 6);
 
-	// Spawn the initial ships
-	for(int i = 0; i < MaxShipCount; i++)
-	{
-		SpawnHarvester();
-	}
+	// Spawn the initial ships and defaults
+	for (int i = 0; i < MaxHarvesterCount; i++)
+		SpawnShip(false)->SetDefaultGenes();
+	for (int i = 0; i < MaxPirateCount; i++)
+		SpawnShip(true)->SetDefaultGenes();
 
 	// Spawn the gas cloud count
 	for(int i = 0; i < MaxGasCloudCount; i++)
@@ -54,15 +55,21 @@ void AShipSpawner::Tick(float DeltaTime)
 	// Increase the generation alive time
 	GenerationAliveTime += DeltaTime;
 
+	// Ensure the pirate ships always exist
+	while (NumPirates < MaxPirateCount)
+	{
+		SpawnShip(true);
+	}
+
 	// If the number of ships is less than 20% of the maximum
-	if (NumOfShips < MaxShipCount * SHIP_EVOLVE_CUTOFF)
+	if (NumHarvesters < MaxHarvesterCount * SHIP_EVOLVE_CUTOFF)
 	{
 		// The current alive harvesters from the world
 		TArray<AActor*> AliveHarvesters;
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABoid::StaticClass(), AliveHarvesters);
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHarvesterBoid::StaticClass(), AliveHarvesters);
 		
 		// Clear the population of DNA
-		TArray<DNA> AlivePopulation;
+		TArray<DNA> AliveHarvesterPopulation;
 
 		// Loop through all the alive harvesters
 		for (const auto Ship : AliveHarvesters)
@@ -74,14 +81,36 @@ void AShipSpawner::Tick(float DeltaTime)
 			Boid->CalculateAndStoreFitness(NONE);
 
 			// Get the current population DNA
-			AlivePopulation.Add(Boid->GetDNA());
+			AliveHarvesterPopulation.Add(Boid->GetDNA());
+		}
+		
+
+		// The current alive harvesters from the world
+		TArray<AActor*> AlivePirates;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), APirateBoid::StaticClass(), AlivePirates);
+		
+		// Clear the population of DNA
+		TArray<DNA> AlivePiratePopulation;
+
+		// Loop through all the alive harvesters
+		for (const auto Ship : AlivePirates)
+		{
+			// Add the current population to the list
+			ABoid* Boid = Cast<ABoid>(Ship);
+
+			// Calculate the fitness scores of all alive ships
+			Boid->CalculateAndStoreFitness(NONE);
+
+			// Get the current population DNA
+			AlivePiratePopulation.Add(Boid->GetDNA());
 		}
 
 		// Find the current best ship of the previous generation 
 		FindBestShipData();
 
 		// Reset the population
-		HarvesterEvolution->GenerationEnd(GenerationAliveTime, AlivePopulation);
+		HarvesterEvolution->GenerationEnd(GenerationAliveTime, AliveHarvesterPopulation);
+		PirateEvolution->GenerationEnd(GenerationAliveTime, AlivePiratePopulation);
 		
 		// Reset the current generation time
 		GenerationAliveTime = 0.0;
@@ -91,6 +120,7 @@ void AShipSpawner::Tick(float DeltaTime)
 
 		// Evolve the population
 		HarvesterEvolution->Evolve();
+		PirateEvolution->Evolve();
 
 		// Loop through all the alive harvesters
 		for (const auto Ship : AliveHarvesters)
@@ -100,16 +130,23 @@ void AShipSpawner::Tick(float DeltaTime)
 		}
 	
 		// Spawn more ships
-		while (NumOfShips < MaxShipCount)
+		while (NumHarvesters < MaxHarvesterCount)
 		{
-			SpawnHarvester();
+			SpawnShip(false);
+		}
+
+		// Loop through all the alive pirates
+		for (const auto Ship : AlivePirates)
+		{
+			// Updates the DNA to the current population
+			Cast<ABoid>(Ship)->ReplaceDNA();
 		}
 	}
 }
 
 
 // Spawns a new harvester ship into the world
-void AShipSpawner::SpawnHarvester()
+ABoid* AShipSpawner::SpawnShip(bool IsPirate)
 {
 	// Randomise the location of the ship to spawn
 	const float XLoc = FMath::RandRange(-2000.0f, 2000.0f);
@@ -117,21 +154,37 @@ void AShipSpawner::SpawnHarvester()
 	const float ZLoc = FMath::RandRange(500.0f, 4500.0f);
 	const FVector Location(XLoc, YLoc, ZLoc);
 
-	// Spawn the ship
-	AHarvesterBoid* SpawnedShip = Cast<AHarvesterBoid>(GetWorld()->SpawnActor(HarvestShip, &Location ,&FRotator::ZeroRotator));
+	// Spawn the ship (pirate or harvester)
+	ABoid* SpawnedShip = Cast<ABoid>(GetWorld()->SpawnActor(IsPirate ? PirateShip : HarvestShip, &Location ,&FRotator::ZeroRotator));
 	SpawnedShip->Spawner = this;
 
 	// Updates the evolution manager associated with this ship
-	SpawnedShip->EvolutionManager = HarvesterEvolution;
+	SpawnedShip->EvolutionManager = IsPirate ? PirateEvolution : HarvesterEvolution;
 
 	// Adds the ship to the list of alive ships
 	AliveShips.Add(SpawnedShip);
 
-	// Update the DNA of the Ship to a new one from the evolution
-	SpawnedShip->ReplaceDNA();
+	// If a pirate and the DNA already exists from the previous death, then replace
+	if (IsPirate && DeadPirateDNA.Num() > 0)
+	{
+		// Get the DNA from the previous
+		Cast<APirateBoid>(SpawnedShip)->SetDNA(DeadPirateDNA[0]);
+		DeadPirateDNA.RemoveAt(0);
+		
+	} else
+	{
+		// Update the DNA of the Ship to a new one from the evolution
+		SpawnedShip->ReplaceDNA();
+	}
 
 	// Update the number of ships that exist
-	NumOfShips++;
+	if (IsPirate)
+		NumPirates++;
+	else
+		NumHarvesters++;
+
+	// Return the spawned ship
+	return SpawnedShip;
 }
 
 
@@ -139,45 +192,97 @@ void AShipSpawner::SpawnHarvester()
 void AShipSpawner::FindBestShipData()
 {
 	// The best ship's fitness score
-	float TempBestShipFitness = -1;
+	float HarvesterBestShipFitness = -1;
+	float PirateBestShipFitness = -1;
 
 	// Find the best alive ship
 	for (ABoid* Ship : AliveShips)
 	{
-		// If the ship's fitness is greater than the current best
-		if (Ship->GetCurrentFitness() > TempBestShipFitness || TempBestShipFitness < 0)
+		// If it is a pirate
+		if (Ship->IsA(APirateBoid::StaticClass()))
 		{
-			TempBestShipFitness = Ship->GetCurrentFitness();
-			BestShipInGeneration = Ship->ShipStatistics;
+			// If the ship's fitness is greater than the current best
+			if (Ship->GetCurrentFitness() > PirateBestShipFitness || PirateBestShipFitness < 0)
+			{
+				PirateBestShipFitness = Ship->GetCurrentFitness();
+				BestPirateInGeneration = Ship->ShipStatistics;
+			}
 		}
+
+		// Otherwise assume it is a harvester
+		else
+		{
+			// If the ship's fitness is greater than the current best
+			if (Ship->GetCurrentFitness() > HarvesterBestShipFitness || HarvesterBestShipFitness < 0)
+			{
+				HarvesterBestShipFitness = Ship->GetCurrentFitness();
+				BestHarvesterInGeneration = Ship->ShipStatistics;
+			}
+		}
+		
 	}
 
 	// The highest fitness could be a dead ship
 	for (const FShipDataContainer Data : DeadStatistics)
 	{
-		// If the ship's fitness is greater than the current best
-		if (Data.Fitness > TempBestShipFitness || TempBestShipFitness < 0)
+		// Check for if a pirate
+		if (Data.IsPirate)
 		{
-			TempBestShipFitness = Data.Fitness;
-			BestShipInGeneration = Data;
+			// If the ship's fitness is greater than the current best
+			if (Data.Fitness > PirateBestShipFitness || PirateBestShipFitness < 0)
+			{
+				PirateBestShipFitness = Data.Fitness;
+				BestPirateInGeneration = Data;
+			}
 		}
+
+		// Otherwise a harvester
+		else
+		{
+			// If the ship's fitness is greater than the current best
+			if (Data.Fitness > HarvesterBestShipFitness || HarvesterBestShipFitness < 0)
+			{
+				HarvesterBestShipFitness = Data.Fitness;
+				BestHarvesterInGeneration = Data;
+			}
+		}
+		
 	}
 }
 
 
+// Removes a ship from the list
 void AShipSpawner::RemoveShip(ABoid* Ship)
 {
-	// Subtract the number of ships
-	NumOfShips--;
+	// If this is a pirate
+	if (Ship->IsA(APirateBoid::StaticClass()))
+	{
+		// Add the dead pirate DNA
+		const DNA PirateDNA = Ship->GetDNA();
+		DeadPirateDNA.Add(PirateDNA);
+
+		UE_LOG(LogTemp, Warning, TEXT("Pirate at 0: %d"), PirateDNA.StoredFitness);
+
+		// Subtract the number of ships
+		NumPirates--;
+	}
+
+	// Otherwise if a harvester
+	else
+	{
+		// Subtract the number of ships
+		NumHarvesters--;
+	}
+
+	// Removes this ship from the list
+	AliveShips.Remove(Ship);
 
 	// Add the ship's statistics
 	DeadStatistics.Add(Ship->ShipStatistics);
-	
-	// Removes this ship from the list
-	AliveShips.Remove(Ship);
 }
 
 
+// Gets the gas cloud array
 TArray<AGasCloud*> AShipSpawner::GetGasClouds()
 {
 	return GasClouds;

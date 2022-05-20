@@ -37,10 +37,10 @@ void AHarvesterBoid::Tick(float DeltaTime)
 
 
 // Replaces the DNA with a new one from the population
-void AHarvesterBoid::ReplaceDNA()
+void AHarvesterBoid::ReplaceDNA(bool RetrieveNew)
 {
 	// Replace all the default values
-	Super::ReplaceDNA();
+	Super::ReplaceDNA(RetrieveNew);
 
 	// Also replace the speed strength
 	SpeedStrength = ShipDNA.StrengthValues[5];
@@ -133,5 +133,22 @@ void AHarvesterBoid::OnHitBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent
 	AGasCloud* cloud = Cast<AGasCloud>(OtherActor);
 	if (cloud != nullptr)
 		CollisionCloud = nullptr;
+}
+
+
+// Gets the list of defaults
+void AHarvesterBoid::SetDefaultGenes()
+{
+	ShipDNA.SetDefault({
+		407.0f,			// Velocity Alignment
+		162.0f,			// Separation
+		0.7f,			// Centering
+		894.0f,			// Avoidance
+		62.0f,			// Gas Cloud
+		1115.0f,		// Speed
+	});
+
+	// Call the base function
+	Super::SetDefaultGenes();
 }
 

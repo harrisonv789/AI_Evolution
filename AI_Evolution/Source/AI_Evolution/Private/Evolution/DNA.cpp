@@ -11,29 +11,19 @@ DNA::DNA()
 	// This should not be called by the appropriate Ship Spawner manager.
 }
 
+
+// Main constructor with the number of genes
 DNA::DNA(int DNASize)
 {
 	// Update the size of the fixed-length genome (this will not change for this simulation)
 	NumOfStrengthValues = DNASize;
 
-	// Initialises the DNA with some a random value for now
-	StrengthValues = {
-		407.0f,			// Velocity Strength
-		162.0f,			// Separation Strength
-		0.7f,			// Centering Strength
-		894.0f,		// Avoidance Strength
-		62.0f,			// Gas Cloud Strength
-		1115.0f 			// Speed Strength
-	};
+	// Randomises the genes
+	Randomise();
 }
 
 
-DNA::~DNA()
-{
-	// Currently no need for a destructor
-}
-
-
+// Merges a DNA with another
 DNA DNA::Crossover (DNA Other)
 {
 	// Creates a new DNA
@@ -60,7 +50,7 @@ DNA DNA::Crossover (DNA Other)
 }
 
 
-// TODO: Explain how the mutation works
+// Mutates the current DNA strand
 void DNA::Mutation()
 {
 	// Loop through every one of the strength values for mutations
@@ -86,13 +76,39 @@ void DNA::Mutation()
 }
 
 
+// Randomises all values
+void DNA::Randomise()
+{
+	// Empty the current list
+	StrengthValues.Empty();
+	
+	// Randomise between min and max all the strengths
+	for (int i = 0; i < NumOfStrengthValues; ++i)
+		StrengthValues.Add(FMath::RandRange(MIN_STRENGTH_VALUE, MAX_STRENGTH_VALUE));
+}
+
+
+// Sets the default values
+void DNA::SetDefault(TArray<float> Default)
+{
+	// Ensures the length matches
+	if (Default.Num() != NumOfStrengthValues) return;
+
+	// Updates the list with these elements
+	StrengthValues.Empty();
+	StrengthValues.Append(Default);
+}
+
+
+// Copies data from one DNA to another
 void DNA::operator=(const DNA& Other)
 {
 	// Makes a copy of the parameters
 	NumOfStrengthValues = Other.NumOfStrengthValues;
 
 	// The list of strength values
-	StrengthValues = Other.StrengthValues;
+	StrengthValues.Empty();
+	StrengthValues.Append(Other.StrengthValues);
 
 	// The current fitness stored
 	StoredFitness = Other.StoredFitness;

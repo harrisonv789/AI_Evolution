@@ -8,6 +8,7 @@
 #include "CoreMinimal.h"
 #include "Boids/Boid.h"
 #include "Boids/HarvesterBoid.h"
+#include "Boids/PirateBoid.h"
 #include "Evolution/EvolutionManager.h"
 #include "Environment/GasCloud.h"
 #include "GameFramework/Actor.h"
@@ -48,17 +49,28 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	// The array of dead statistics
 	TArray<FShipDataContainer> DeadStatistics;
 
+	// The list of dead pirate DNA to take from
+	TArray<DNA> DeadPirateDNA;
+
 	
 	/*************************************************************/
 	public:
 
-	// The maximum number of ships that must exist in the world
+	// The maximum number of harvesters that must exist in the world
 	UPROPERTY(EditAnywhere, Category = "Entities")
-	int MaxShipCount = 300;
+	int MaxHarvesterCount = 750;
 
-	// The type of ship to spawn in the world
+	// The maximum number of pirates that must exist in the world
+	UPROPERTY(EditAnywhere, Category = "Entities")
+	int MaxPirateCount = 15;
+
+	// The type of harvester ship to spawn in the world
 	UPROPERTY(EditAnywhere, Category = "Entities")
 	TSubclassOf<AHarvesterBoid> HarvestShip;
+
+	// The type of pirate ship to spawn in the world
+	UPROPERTY(EditAnywhere, Category = "Entities")
+	TSubclassOf<APirateBoid> PirateShip;
 
 	// The maximum number of gas clouds to spawn into the world
 	UPROPERTY(EditAnywhere, Category = "Entities")
@@ -68,18 +80,31 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	UPROPERTY(EditAnywhere, Category = "Entities")
 	TSubclassOf<AGasCloud> GasCloud;
 
-	// The current number of ships spawned
+	// The current number of harvester ships spawned
 	UPROPERTY(BlueprintReadOnly)
-	int NumOfShips = 0;
+	int NumHarvesters = 0;
 
-	// The current highest fitness's ship from previous generation
+	// The current number of pirate ships spawned
 	UPROPERTY(BlueprintReadOnly)
-	FShipDataContainer BestShipInGeneration;
+	int NumPirates = 0;
+
+	// The current highest fitness's harvester ship from previous generation
+	UPROPERTY(BlueprintReadOnly)
+	FShipDataContainer BestHarvesterInGeneration;
+
+	// The current highest fitness's pirate ship from previous generation
+	UPROPERTY(BlueprintReadOnly)
+	FShipDataContainer BestPirateInGeneration;
 
 	// The evolution manager for the harvester ships. This will
 	//		handle the evolution for this particular species.
 	UPROPERTY(BlueprintReadOnly)
 	UEvolutionManager* HarvesterEvolution;
+
+	// The evolution manager for the pirate ships. This will
+	//		handle the evolution for this particular species.
+	UPROPERTY(BlueprintReadOnly)
+	UEvolutionManager* PirateEvolution;
 
 
 	/*************************************************************/
@@ -97,8 +122,10 @@ class AI_EVOLUTION_API AShipSpawner : public AActor
 	 * @brief Spawns a new harvester ship into the world. This will also
 	 * set up its DNA from its appropriate Evolve Manager class. It will
 	 * spawn somewhere within the walls of the world.
+	 * @param IsPirate Whether to spawn the pirate ship, or a harvester.
+	 * @return The ship that was spawned.
 	 */
-	void SpawnHarvester();
+	ABoid* SpawnShip(bool IsPirate);
 
 	/**
 	 * @brief Finds the best ship out of all the alive ships and stores
