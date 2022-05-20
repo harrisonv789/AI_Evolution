@@ -6,11 +6,11 @@
 #include "Evolution/EvolutionManager.h"
 
 // Currently, the rank algorithm is:
-// (20 - rank)^2,
+// (20 - rank),
 // where a good rank is 0 and a bad rank is 19
 int UEvolutionManager::GetRankDuplication(int Rank, int MaxRank)
 {
-    return (MaxRank - Rank) * (MaxRank - Rank);
+    return (MaxRank - Rank);
 }
 
 

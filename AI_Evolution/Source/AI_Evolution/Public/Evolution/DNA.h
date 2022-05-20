@@ -20,6 +20,9 @@ struct AI_EVOLUTION_API DNA
 	// The chance of mutation for each individual gene
 	static constexpr float MUTATION_CHANCE = 0.25f;
 
+	// The maximum mutation factor to adjust
+	static constexpr float MUTATION_FACTOR = 0.07f;
+
 	// The minimum value for a strength
 	static constexpr float MIN_STRENGTH_VALUE = 0.0f;
 

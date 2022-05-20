@@ -59,12 +59,9 @@ void DNA::Mutation()
 		// If mutating this gene
 		if (FMath::RandRange(0.0f, 1.0f) < MUTATION_CHANCE)
 		{
-			// The mutation adjustment %
-			constexpr float MUTATION_ADJUSTMENT = 0.10f;
-
 			// Calculate the min and max for the random
-			const float MinStrength = StrengthValues[i] * (1 - MUTATION_ADJUSTMENT);
-			const float MaxStrength = StrengthValues[i] * (1 + MUTATION_ADJUSTMENT);
+			const float MinStrength = StrengthValues[i] * (1 - MUTATION_FACTOR);
+			const float MaxStrength = StrengthValues[i] * (1 + MUTATION_FACTOR);
 			
 			// Adjust the value ot a new random one
 			StrengthValues[i] = FMath::RandRange(MinStrength, MaxStrength);
