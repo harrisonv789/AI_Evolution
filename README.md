@@ -55,7 +55,7 @@ The Pirate ship's only goal is to plunder gold from Harvester ships. As such, th
 
 where $p$ is the number of ships plundered and $g$ is the total gold collected at the end of the generation.
 
-Additionally, in both cases, the fitness is affected by the cause of the death, if any. If the ship does not die and is still alive at the end of the generation, it's fitness is the calculated one. Otherwise, if the ship collides with a wall, it will lose 75% of its fitness. If it collides with another BOID, it will lose 75% of its fitness. However, if a Harvester collides with a Pirate, it will only lose 50% of its fitness. These rules are defined by the assignment brief.
+Additionally, in both cases, the fitness is affected by the cause of the death, if any. If the ship does not die and is still alive at the end of the generation, it's fitness is the calculated one. Otherwise, if the ship collides with a wall, it will lose 25% of its fitness. If it collides with another BOID, it will lose 25% of its fitness. However, if a Harvester collides with a Pirate, it will only lose 50% of its fitness. These rules are defined by the assignment brief.
 
 ---
 

@@ -62,9 +62,9 @@ void AHarvesterBoid::CalculateAndStoreFitness(EDeathReason Reason)
 	case NONE:
 		Fitness *= 1.0f; break;
 	case SHIP_COLLISION:
-		Fitness *= 0.25f; break;
+		Fitness *= 0.75f; break;
 	case WALL_COLLISION:
-		Fitness *= 0.25f; break;
+		Fitness *= 0.75f; break;
 	case PIRATE:
 		Fitness *= 0.50f; break;
 	}

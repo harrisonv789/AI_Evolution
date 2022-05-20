@@ -69,9 +69,9 @@ void APirateBoid::CalculateAndStoreFitness(EDeathReason Reason)
 		case SHIP_COLLISION: // This should never occur
 			Fitness *= 1.0f; break;
 		case WALL_COLLISION:
-			Fitness *= 0.25f; break;
+			Fitness *= 0.75f; break;
 		case PIRATE: // This is the same as colliding with another BOID
-			Fitness *= 0.25f; break;
+			Fitness *= 0.75f; break;
 	}
 	
 	// Update the DNA fitness
