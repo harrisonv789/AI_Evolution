@@ -11,6 +11,9 @@ APirateBoid::APirateBoid()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Ensure the statistics for pirates are set.
+	ShipStatistics.IsPirate = true;
 }
 
 
@@ -30,7 +33,6 @@ FVector APirateBoid::AdditionalForce()
 
 	// Subtract from the force direction (so that it actually goes to ships)
 	const FVector Force = -(AvoidShips(NearbyHarvesters).GetSafeNormal() * TargetingStrength);
-	UE_LOG(LogTemp, Warning, TEXT("Vector: %s"), *Force.ToString());
 	
 	// Return the final force
 	return Force;
@@ -41,7 +43,7 @@ FVector APirateBoid::AdditionalForce()
 float APirateBoid::GetMinSpeed()
 {
 	// If waiting, do not move
-	return CurrentWaitTime <= 0.0 ? 550 : 0.0;
+	return CurrentWaitTime <= 0.0f ? 550.0f : 0.0f;
 }
 
 
@@ -57,7 +59,7 @@ float APirateBoid::GetMaxSpeed()
 void APirateBoid::CalculateAndStoreFitness(EDeathReason Reason)
 {
 	// Sets the fitness as the gold collected
-	float Fitness = GoldCollected * 50.0f;
+	float Fitness = GoldCollected * 50.0f + (static_cast<float>(HarvestersPlundered) * 5.0);
 	
 	// Set a multiplier based on the reason
 	switch (Reason)
@@ -102,7 +104,7 @@ void APirateBoid::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// Decrease the wait time if waiting
-	if (CurrentWaitTime > 0.0)
+	if (CurrentWaitTime > 0.0f)
 		CurrentWaitTime -= DeltaTime;
 }
 
@@ -114,7 +116,10 @@ void APirateBoid::ReplaceDNA(bool RetrieveNew)
 	Super::ReplaceDNA(RetrieveNew);
 
 	// Reset the pause time
-	CurrentWaitTime = 0.0;
+	CurrentWaitTime = 0.0f;
+
+	// Reset the plunder count
+	HarvestersPlundered = 0;
 
 	// Also replace the targeting strength
 	TargetingStrength = ShipDNA.StrengthValues[5];
@@ -157,7 +162,7 @@ void APirateBoid::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent,
 
 				// Take the harvester's current gold
 				GoldCollected += Harvester->GoldCollected;
-				Harvester->GoldCollected = 0.0;
+				Harvester->GoldCollected = 0.0f;
 
 				// Reset the wait time
 				CurrentWaitTime = MaxWaitTime;
@@ -174,12 +179,12 @@ void APirateBoid::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent,
 void APirateBoid::SetDefaultGenes()
 {
 	ShipDNA.SetDefault( {
-		100.0f,			// Velocity Alignment
-		100.0f,			// Separation
-		10.0f,			// Centering
-		1000.0f,		// Avoidance
-		200.0f,			// Gas Cloud
-		1000.0f,		// Tracking
+		92.0f,			// Velocity Alignment
+		116.0f,			// Separation
+		9.0f,			// Centering
+		1018.0f,			// Avoidance
+		173.0f,			// Gas Cloud
+		892.0f,			// Tracking
 	});
 
 	// Call the base function

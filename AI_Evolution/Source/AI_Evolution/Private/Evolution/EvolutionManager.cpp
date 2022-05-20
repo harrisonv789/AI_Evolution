@@ -158,10 +158,21 @@ DNA UEvolutionManager::RetrieveDNA()
 }
 
 
+// Adds dead DNA to the list
 void UEvolutionManager::AddDeadDNA(DNA Dead)
 {
 	// Adds the new DNA to the dead list
-	DeadDNA.Add(Dead);
+	try
+	{
+		DeadDNA.Add(Dead);
+	}
+
+	// This catches a signal fault caused randomly
+	catch (...)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to add DNA when dead."));
+	}
+	
 }
 
 

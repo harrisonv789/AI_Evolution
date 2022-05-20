@@ -49,7 +49,11 @@ The Harvester ship's goal is to collect gold whilst staying alive for as long as
 
 where $t$ is the time alive in seconds and $g$ is the total gold collected at the end of the generation.
 
-The Pirate ship's only goal is to plunder gold from Harvester ships. As such, they are not concerned about how long they live for during a generation. This fitness function is only based on the total gold collected from the ships. A constant scale factor is applied to the fitness to ensure that the numbers are appropriate.
+The Pirate ship's only goal is to plunder gold from Harvester ships. As such, they are not concerned about how long they live for during a generation. This fitness function is only based on the total gold collected from the ships, along with the number of ships plundered. A constant scale factor is applied to the fitness to ensure that the numbers are appropriate.
+
+>$ \mathrm{fitness} = 50g + 5p $
+
+where $p$ is the number of ships plundered and $g$ is the total gold collected at the end of the generation.
 
 Additionally, in both cases, the fitness is affected by the cause of the death, if any. If the ship does not die and is still alive at the end of the generation, it's fitness is the calculated one. Otherwise, if the ship collides with a wall, it will lose 75% of its fitness. If it collides with another BOID, it will lose 75% of its fitness. However, if a Harvester collides with a Pirate, it will only lose 50% of its fitness. These rules are defined by the assignment brief.
 

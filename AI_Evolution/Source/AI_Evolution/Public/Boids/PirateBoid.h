@@ -24,14 +24,17 @@ class AI_EVOLUTION_API APirateBoid : public ABoid
 
 	// The maximum wait time after plundering a ship
 	UPROPERTY(BlueprintReadOnly)
-	float MaxWaitTime = 5.0;
+	float MaxWaitTime = 5.0f;
 
 	// The current time waiting after plundering a ship
 	UPROPERTY(BlueprintReadOnly)
-	float CurrentWaitTime = 0.0;
+	float CurrentWaitTime = 0.0f;
 
 	// The additional targeting strength to add to target specific harvesters
 	float TargetingStrength = 1.0f;
+
+	// The number of harvesters eaten.
+	int HarvestersPlundered = 0;
 	
 
 	/*************************************************************/

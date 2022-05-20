@@ -140,12 +140,12 @@ void AHarvesterBoid::OnHitBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent
 void AHarvesterBoid::SetDefaultGenes()
 {
 	ShipDNA.SetDefault({
-		407.0f,			// Velocity Alignment
-		162.0f,			// Separation
-		0.7f,			// Centering
-		894.0f,			// Avoidance
-		62.0f,			// Gas Cloud
-		1115.0f,		// Speed
+		369.0f,			// Velocity Alignment
+		161.0f,			// Separation
+		0.8f,			// Centering
+		1042.0f,		// Avoidance
+		68.0f,			// Gas Cloud
+		885.0f,			// Speed
 	});
 
 	// Call the base function
