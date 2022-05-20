@@ -6,7 +6,9 @@
 #pragma once
 
 /**
- * @brief Defines the reason that a Ship died
+ * @brief Defines the reason that a Ship died. This will
+ * be used for the fitness calculation, depending on
+ * the exact reason.
  */
 UENUM(Blueprintable, BlueprintType)
 enum EDeathReason

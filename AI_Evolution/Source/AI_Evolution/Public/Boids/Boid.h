@@ -165,29 +165,39 @@ class AI_EVOLUTION_API ABoid : public AActor
 	virtual TSubclassOf<AActor> GetShipFilter ();
 
 	/**
-	 * @brief Attempts to avoid other ships nearby and returns a force vector.
-	 * @param Flock The current array of ships
-	 * @return An additional force
+	 * @brief Attempts to avoid other ships nearby and returns a force vector. If
+	 * a ship of some type is within the sensor, it will determine the relative
+	 * vector that will push the ship away from another, to avoid a collision.
+	 * This will work with multiple ships within the perception range.
+	 * @param Flock The current array of ships within the perception sensor.
+	 * @return An additional force to add to the flight path.
 	 */
 	FVector	AvoidShips(TArray<AActor*> Flock);
 
 	/**
-	 * @brief Attempts to match the velocity of nearby ships and returns a force vector
-	 * @param Flock The current array of ships
-	 * @return An additional force
+	 * @brief Attempts to match the velocity of nearby ships and returns a force vector.
+	 * This looks for nearby BOIDs and determines the relative velocity of these ships
+	 * to match to.
+	 * @param Flock The current array of ships within the perception sensor.
+	 * @return An additional force to add to the flight path.
 	 */
 	FVector VelocityMatching(TArray<AActor*> Flock);
 	
 	/**
-	 * @brief Attempts to move towards a local center of nearby ships and returns a force vector
-	 * @param Flock The current array of ships
-	 * @return An additional force
+	 * @brief Attempts to move towards a local center of nearby ships and returns a force vector.
+	 * This will look at all nearby ships and find the center position to flock to. This may be
+	 * dangerous as it could lead to BOIDs killing each other due to collisions.
+	 * @param Flock The current array of ships within the perception sensor.
+	 * @return An additional force to add to the flight path.
 	 */
 	FVector FlockCentering(TArray<AActor*> Flock);
 
 	/**
-	 * @brief Attempts to avoid any obstacles around the ship and returns a force vector
-	 * @return An additional force
+	 * @brief Attempts to avoid any obstacles around the ship and returns a force vector. If
+	 * there are obstacles detected by the sensor directions, such as a wall, this will attempt
+	 * to return the vector that pushes away from the wall. Otherwise, the BOID will collide
+	 * with the obstacle and die.
+	 * @return An additional force to add to the flight path.
 	 */
 	FVector AvoidObstacle();
 
@@ -195,7 +205,7 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * @brief Attempts to target the nearest gas clouds on the ship's quest to get gold.
 	 * This adds up all forces of nearby gas clouds and attempts to move towards a
 	 * specific one.
-	 * @return An additional force
+	 * @return An additional force to add to the flight path.
 	 */
 	FVector GasTargeting () const;
 
@@ -204,7 +214,7 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * the flight path calculation. This allows any child classes to override this
 	 * method and create additional flight paths without having to adjust the
 	 * flight code.
-	 * @return An additional force to add to the acceleration.
+	 * @return An additional force to add to the flight path.
 	 */
 	virtual FVector AdditionalForce ();
 	

@@ -10,7 +10,8 @@
 #include "AI_EvolutionGameModeBase.generated.h"
 
 /**
- * The base game mode class that handles any core functionality
+ * The base game mode class that handles any core functionality.
+ * No additional functionality has been added.
  */
 UCLASS()
 class AI_EVOLUTION_API AAI_EvolutionGameModeBase : public AGameModeBase
