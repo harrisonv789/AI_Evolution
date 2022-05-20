@@ -193,6 +193,9 @@ void ABoid::FlightPath(float DeltaTime)
 	Acceleration += VelocityMatching(NearbyShips).GetSafeNormal() * VelocityStrength;
 	Acceleration += FlockCentering(NearbyShips).GetSafeNormal() * CenteringStrength;
 
+	// Add in any additional forces
+	Acceleration += AdditionalForce();
+
 	// If there are obstacles
 	if (IsObstacleAhead())
 		Acceleration += AvoidObstacle().GetSafeNormal() * AvoidanceStrength;
@@ -408,6 +411,13 @@ FVector ABoid::GasTargeting() const
 
 	// Returns the steering vector
 	return Steering;
+}
+
+
+// Additional force; empty in this class
+FVector ABoid::AdditionalForce()
+{
+	return FVector::ZeroVector;
 }
 
 

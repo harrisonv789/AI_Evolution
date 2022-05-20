@@ -21,6 +21,22 @@ TSubclassOf<AActor> APirateBoid::GetShipFilter()
 }
 
 
+// Additional force for harvesting ships
+FVector APirateBoid::AdditionalForce()
+{
+	// Determine any nearby ships from the sensor
+	TArray<AActor*> NearbyHarvesters;
+	PerceptionSensor->GetOverlappingActors(NearbyHarvesters, AHarvesterBoid::StaticClass());
+
+	// Subtract from the force direction (so that it actually goes to ships)
+	const FVector Force = -(AvoidShips(NearbyHarvesters).GetSafeNormal() * TargetingStrength);
+	UE_LOG(LogTemp, Warning, TEXT("Vector: %s"), *Force.ToString());
+	
+	// Return the final force
+	return Force;
+}
+
+
 // Gets the minimum speed of the BOID
 float APirateBoid::GetMinSpeed()
 {

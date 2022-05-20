@@ -45,6 +45,15 @@ class AI_EVOLUTION_API APirateBoid : public ABoid
 	virtual TSubclassOf<AActor> GetShipFilter() override;
 
 	/**
+	 * @brief Calculates the force that allows the pirate ship to target
+	 * any Harvester ships that exist within the current Perception sensors.
+	 * This force will then be added to the flight path for tracking and
+	 * will allow the pirate ships to harvest the harvester ships.
+	 * @return An additional force to add to the acceleration.
+	 */
+	virtual FVector AdditionalForce() override;
+
+	/**
 	 * @brief This method returns the minimum speed that a BOID can
 	 * move at. This is constant for the ships, and is set to a speed
 	 * of 550 units per second. However, if the ship has just plundered

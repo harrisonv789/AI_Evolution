@@ -198,6 +198,15 @@ class AI_EVOLUTION_API ABoid : public AActor
 	 * @return An additional force
 	 */
 	FVector GasTargeting () const;
+
+	/**
+	 * @brief Calculates an additional force that can be added to the acceleration on
+	 * the flight path calculation. This allows any child classes to override this
+	 * method and create additional flight paths without having to adjust the
+	 * flight code.
+	 * @return An additional force to add to the acceleration.
+	 */
+	virtual FVector AdditionalForce ();
 	
 	/**
 	 * @brief Calculates a new flight path based on the force vectors. It will
