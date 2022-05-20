@@ -25,7 +25,7 @@ void AShipSpawner::BeginPlay()
 
 	// Initialise all of the evolution managers
 	HarvesterEvolution->Initialize(6, MaxHarvesterCount, 30);
-	PirateEvolution->Initialize(5, MaxPirateCount, 6);
+	PirateEvolution->Initialize(6, MaxPirateCount, 6);
 
 	// Spawn the initial ships and defaults
 	for (int i = 0; i < MaxHarvesterCount; i++)

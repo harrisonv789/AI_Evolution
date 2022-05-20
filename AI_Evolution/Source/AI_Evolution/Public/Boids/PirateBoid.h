@@ -29,6 +29,9 @@ class AI_EVOLUTION_API APirateBoid : public ABoid
 	// The current time waiting after plundering a ship
 	UPROPERTY(BlueprintReadOnly)
 	float CurrentWaitTime = 0.0;
+
+	// The additional targeting strength to add to target specific harvesters
+	float TargetingStrength = 1.0f;
 	
 
 	/*************************************************************/
@@ -91,6 +94,14 @@ class AI_EVOLUTION_API APirateBoid : public ABoid
 	 * @param DeltaTime [s] The time-step between frames
 	 */
 	virtual void Tick(float DeltaTime) override;
+
+	/**
+	 * @brief Replaces the current DNA with a new one from the evolved DNA.
+	 * Additionally, this will replace the targeting strength that exists in the
+	 * harvester ship and updates its own strength values.
+	 * @param RetrieveNew A flag for if retrieving a new DNA from the evolve manager.
+	 */
+	virtual void ReplaceDNA(bool RetrieveNew = true) override;
 
 	/**
 	 * @brief Updates the current DNA to another copy of a DNA. This will

@@ -41,7 +41,7 @@ float APirateBoid::GetMaxSpeed()
 void APirateBoid::CalculateAndStoreFitness(EDeathReason Reason)
 {
 	// Sets the fitness as the gold collected
-	float Fitness = GoldCollected * 10.0f;
+	float Fitness = GoldCollected * 50.0f;
 	
 	// Set a multiplier based on the reason
 	switch (Reason)
@@ -70,6 +70,9 @@ void APirateBoid::UpdateStatistics()
 	// Ensure it sets this as a pirate
 	ShipStatistics.IsPirate = true;
 
+	// Update the targeting value
+	ShipStatistics.StrengthSpeed = TargetingStrength;
+
 	// Update the base statistic information
 	// This is called after as the fitness is calculated
 	Super::UpdateStatistics();
@@ -85,6 +88,20 @@ void APirateBoid::Tick(float DeltaTime)
 	// Decrease the wait time if waiting
 	if (CurrentWaitTime > 0.0)
 		CurrentWaitTime -= DeltaTime;
+}
+
+
+// Replaces the DNA with a new one from the population
+void APirateBoid::ReplaceDNA(bool RetrieveNew)
+{
+	// Replace all the default values
+	Super::ReplaceDNA(RetrieveNew);
+
+	// Reset the pause time
+	CurrentWaitTime = 0.0;
+
+	// Also replace the targeting strength
+	TargetingStrength = ShipDNA.StrengthValues[5];
 }
 
 
@@ -146,6 +163,7 @@ void APirateBoid::SetDefaultGenes()
 		10.0f,			// Centering
 		1000.0f,		// Avoidance
 		200.0f,			// Gas Cloud
+		1000.0f,		// Tracking
 	});
 
 	// Call the base function
