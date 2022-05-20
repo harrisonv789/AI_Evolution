@@ -92,24 +92,10 @@ void DNA::Randomise()
 void DNA::SetDefault(TArray<float> Default)
 {
 	// Ensures the length matches
-	if (Default.Num() != NumOfStrengthValues) return;
+	if (Default.Num() != NumOfStrengthValues)
+		return;
 
 	// Updates the list with these elements
 	StrengthValues.Empty();
 	StrengthValues.Append(Default);
-}
-
-
-// Copies data from one DNA to another
-void DNA::operator=(const DNA& Other)
-{
-	// Makes a copy of the parameters
-	NumOfStrengthValues = Other.NumOfStrengthValues;
-
-	// The list of strength values
-	StrengthValues.Empty();
-	StrengthValues.Append(Other.StrengthValues);
-
-	// The current fitness stored
-	StoredFitness = Other.StoredFitness;
 }

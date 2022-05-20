@@ -12,9 +12,10 @@
  * of genes the DNA has is dependent on the species, but will not
  * change throughout the evolution time.
  */
-class AI_EVOLUTION_API DNA
+struct AI_EVOLUTION_API DNA
 {
 	/*************************************************************/
+	private:
 
 	// The chance of mutation for each individual gene
 	static constexpr float MUTATION_CHANCE = 0.25f;
@@ -98,14 +99,5 @@ class AI_EVOLUTION_API DNA
 	 * @param Default The default array of parameters that should be set.
 	 */
 	void SetDefault(TArray<float> Default);
-
-	/**
-	 * @brief This operator is called when setting on DNA to another. This
-	 * should copy all of the DNA variables from one DNA to another and is
-	 * able to ensure consistency with a data. This particular class almost
-	 * acts as a struct, so the copy operator is required.
-	 * @param Other The DNA to copy from.
-	 */
-	void operator=(const DNA& Other);
 	
 };

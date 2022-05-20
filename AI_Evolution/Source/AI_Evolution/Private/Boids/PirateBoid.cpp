@@ -41,7 +41,7 @@ float APirateBoid::GetMaxSpeed()
 void APirateBoid::CalculateAndStoreFitness(EDeathReason Reason)
 {
 	// Sets the fitness as the gold collected
-	float Fitness = GoldCollected;
+	float Fitness = GoldCollected * 10.0f;
 	
 	// Set a multiplier based on the reason
 	switch (Reason)
@@ -49,7 +49,7 @@ void APirateBoid::CalculateAndStoreFitness(EDeathReason Reason)
 		case NONE:
 			Fitness *= 1.0f; break;
 		case SHIP_COLLISION: // This should never occur
-			Fitness *= 1.0; break;
+			Fitness *= 1.0f; break;
 		case WALL_COLLISION:
 			Fitness *= 0.25f; break;
 		case PIRATE:
@@ -110,7 +110,7 @@ void APirateBoid::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent,
 		if (Ship != nullptr && Invincibility <= 0)
 		{
 			// Check for a pirate ship
-			if (OtherActor->IsA(StaticClass()))
+			if (Ship->IsA(StaticClass()))
 			{
 				// Call the death function for pirates
 				Death(PIRATE);

@@ -118,6 +118,9 @@ void AShipSpawner::Tick(float DeltaTime)
 		// Clear the dead statistics
 		DeadStatistics.Empty();
 
+		// Clear the dead pirate data
+		DeadPirateDNA.Empty();
+
 		// Evolve the population
 		HarvesterEvolution->Evolve();
 		PirateEvolution->Evolve();
@@ -170,6 +173,7 @@ ABoid* AShipSpawner::SpawnShip(bool IsPirate)
 		// Get the DNA from the previous
 		Cast<APirateBoid>(SpawnedShip)->SetDNA(DeadPirateDNA[0]);
 		DeadPirateDNA.RemoveAt(0);
+		SpawnedShip->ReplaceDNA(false);
 		
 	} else
 	{
@@ -260,8 +264,6 @@ void AShipSpawner::RemoveShip(ABoid* Ship)
 		// Add the dead pirate DNA
 		const DNA PirateDNA = Ship->GetDNA();
 		DeadPirateDNA.Add(PirateDNA);
-
-		UE_LOG(LogTemp, Warning, TEXT("Pirate at 0: %d"), PirateDNA.StoredFitness);
 
 		// Subtract the number of ships
 		NumPirates--;
